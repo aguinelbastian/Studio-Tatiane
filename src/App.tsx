@@ -13,6 +13,7 @@ import Clientes from './pages/Clientes'
 import Contratos from './pages/Contratos'
 import Configuracoes from './pages/Configuracoes'
 import Relatorios from './pages/Relatorios'
+import Usuarios from './pages/Usuarios'
 import NotFound from './pages/NotFound'
 import MainLayout from './components/layouts/MainLayout'
 
@@ -39,6 +40,7 @@ const App = () => (
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superuser']} />}>
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />
+                <Route path="/usuarios" element={<Usuarios />} />
               </Route>
             </Route>
           </Route>

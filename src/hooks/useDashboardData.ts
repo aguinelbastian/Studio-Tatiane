@@ -42,7 +42,7 @@ export function useDashboardData() {
       // 1. Clientes Ativos
       const { count: clientesAtivos } = await supabase
         .from('clientes')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'ativo')
 
       // 2. Receita do Mês
@@ -68,7 +68,7 @@ export function useDashboardData() {
       // 4. Aulas Realizadas (Mês)
       const { count: aulasRealizadas } = await supabase
         .from('agendamentos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'realizado')
         .gte('data_hora', startStr)
         .lte('data_hora', endStr)
@@ -105,18 +105,18 @@ export function useDashboardData() {
       // Alertas
       const { count: reposicoesPendentes } = await supabase
         .from('reposicoes')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'pendente')
 
       const { count: pagamentosVencidos } = await supabase
         .from('pagamentos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'pendente')
         .lt('data_pagamento', nowStr)
 
       const { count: contratosAVencer } = await supabase
         .from('contratos_cliente')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact' })
         .eq('status', 'ativo')
         .gte('data_fim', nowStr)
         .lte('data_fim', in7DaysStr)

@@ -30,7 +30,7 @@ export function ModalHorario({ open, onOpenChange, horario, profissionais, onSuc
     else
       reset({
         dia_semana: 1,
-        profissional_id: profissionais[0]?.id || '',
+        profissional_id: profissionais?.[0]?.id || '',
         hora_inicio: '08:00',
         hora_fim: '12:00',
         ativo: true,
@@ -61,7 +61,7 @@ export function ModalHorario({ open, onOpenChange, horario, profissionais, onSuc
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {profissionais.map((p: any) => (
+                {profissionais?.map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.nome}
                   </SelectItem>

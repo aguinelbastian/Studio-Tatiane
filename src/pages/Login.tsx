@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Card,
@@ -23,11 +23,13 @@ export default function Login() {
   const { toast } = useToast()
   const { user, signIn } = useAuthStore()
 
-  // Se já está logado, redireciona
-  if (user) {
-    navigate('/dashboard', { replace: true })
-    return null
-  }
+  useEffect(() => {
+    if (user) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, navigate])
+
+  if (user) return null
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

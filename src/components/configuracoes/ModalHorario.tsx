@@ -55,7 +55,7 @@ export function ModalHorario({ open, onOpenChange, horario, profissionais, onSuc
             <Label>Profissional</Label>
             <Select
               onValueChange={(v) => setValue('profissional_id', v)}
-              defaultValue={horario?.profissional_id || profissionais[0]?.id}
+              defaultValue={horario?.profissional_id || profissionais?.[0]?.id}
             >
               <SelectTrigger>
                 <SelectValue />

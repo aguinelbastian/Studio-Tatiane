@@ -13,7 +13,6 @@ import {
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import useAuthStore from '@/stores/useAuthStore'
-import { supabase } from '@/lib/supabase'
 import {
   LayoutDashboard,
   CalendarDays,
@@ -30,10 +29,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 export default function MainLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, signOut } = useAuthStore()
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await signOut()
     navigate('/login')
   }
 
@@ -42,18 +41,33 @@ export default function MainLayout() {
       title: 'Dashboard',
       icon: LayoutDashboard,
       path: '/dashboard',
-      roles: ['Admin', 'Profissional'],
+      roles: ['admin', 'professor', 'massoterapeuta', 'superuser'],
     },
     {
       title: 'Agendamentos',
       icon: CalendarDays,
       path: '/agendamentos',
-      roles: ['Admin', 'Profissional'],
+      roles: ['admin', 'professor', 'massoterapeuta', 'superuser'],
     },
-    { title: 'Clientes', icon: Users, path: '/clientes', roles: ['Admin', 'Profissional'] },
-    { title: 'Contratos', icon: FileText, path: '/contratos', roles: ['Admin', 'Profissional'] },
-    { title: 'Relatórios', icon: BarChart3, path: '/relatorios', roles: ['Admin'] },
-    { title: 'Configurações', icon: Settings, path: '/configuracoes', roles: ['Admin'] },
+    {
+      title: 'Clientes',
+      icon: Users,
+      path: '/clientes',
+      roles: ['admin', 'professor', 'massoterapeuta', 'superuser'],
+    },
+    {
+      title: 'Contratos',
+      icon: FileText,
+      path: '/contratos',
+      roles: ['admin', 'professor', 'massoterapeuta', 'superuser'],
+    },
+    { title: 'Relatórios', icon: BarChart3, path: '/relatorios', roles: ['admin', 'superuser'] },
+    {
+      title: 'Configurações',
+      icon: Settings,
+      path: '/configuracoes',
+      roles: ['admin', 'superuser'],
+    },
   ]
 
   const filteredNavItems = navItems.filter((item) =>
@@ -109,13 +123,15 @@ export default function MainLayout() {
             <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
               <Avatar className="h-9 w-9 border border-border">
                 <AvatarImage
-                  src={`https://img.usecurling.com/ppl/thumbnail?gender=${user?.role === 'Admin' ? 'female' : 'male'}&seed=${user?.id}`}
+                  src={`https://img.usecurling.com/ppl/thumbnail?gender=${user?.role === 'admin' ? 'female' : 'male'}&seed=${user?.id}`}
                 />
-                <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
+                <AvatarFallback>{user?.nome?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-medium truncate">{user?.name}</span>
-                <span className="text-xs text-muted-foreground truncate">{user?.role}</span>
+                <span className="text-sm font-medium truncate">{user?.nome || 'Usuário'}</span>
+                <span className="text-xs text-muted-foreground truncate capitalize">
+                  {user?.role || ''}
+                </span>
               </div>
             </div>
           </SidebarFooter>

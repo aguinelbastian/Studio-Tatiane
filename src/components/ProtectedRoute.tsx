@@ -1,11 +1,10 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import useAuthStore from '@/stores/useAuthStore'
-import { UserRole } from '@/types'
 import { useEffect } from 'react'
 import { useToast } from '@/hooks/use-toast'
 
 interface ProtectedRouteProps {
-  allowedRoles?: UserRole[]
+  allowedRoles?: string[]
 }
 
 export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {

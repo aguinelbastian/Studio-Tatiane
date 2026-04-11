@@ -36,7 +36,7 @@ const App = () => (
               <Route path="/contratos" element={<Contratos />} />
 
               {/* Admin Only Routes */}
-              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superuser']} />}>
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />
               </Route>

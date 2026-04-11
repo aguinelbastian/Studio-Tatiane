@@ -1,75 +1,104 @@
-import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '@/lib/supabase/client'
+// src/hooks/useClientesData.ts - VERSÃO CORRIGIDA
 
-export function useClientesData() {
-  const [clientes, setClientes] = useState<any[]>([])
-  const [contratos, setContratos] = useState<any[]>([])
-  const [planos, setPlanos] = useState<any[]>([])
-  const [pacotes, setPacotes] = useState<any[]>([])
-  const [horarios, setHorarios] = useState<any[]>([])
-  const [periodos, setPeriodos] = useState<any[]>([])
-  const [profissionais, setProfissionais] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+import { useEffect, useState } from 'react';
+import { supabase } from '@/utils/supabaseClient';
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true)
-      const [
-        { data: cli, error: e1 },
-        { data: con, error: e2 },
-        { data: pla, error: e3 },
-        { data: pac, error: e4 },
-        { data: hor, error: e5 },
-        { data: per, error: e6 },
-        { data: prof, error: e7 },
-      ] = await Promise.all([
-        supabase.from('clientes').select('*').order('nome'),
-        supabase
-          .from('contratos_cliente')
-          .select('*, clientes(nome), planos(nome), pacotes(nome)')
-          .order('data_inicio', { ascending: false }),
-        supabase.from('planos').select('*').order('nome'),
-        supabase.from('pacotes').select('*').order('nome'),
-        supabase
-          .from('horarios_funcionamento')
-          .select('*, profissionais(nome)')
-          .order('dia_semana'),
-        supabase.from('periodos_fechamento').select('*, profissionais(nome)').order('data_inicio'),
-        supabase.from('profissionais').select('*').order('nome'),
-      ])
-
-      if (e1) throw e1
-      if (e2) throw e2
-
-      setClientes(cli || [])
-      setContratos(con || [])
-      setPlanos(pla || [])
-      setPacotes(pac || [])
-      setHorarios(hor || [])
-      setPeriodos(per || [])
-      setProfissionais(prof || [])
-    } catch (err: any) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+export const useClientesData = () => {
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [contratos, setContratos] = useState<any[]>([]);
+  const [planos, setPlanos] = useState<any[]>([]);
+  const [pacotes, setPacotes] = useState<any[]>([]);
+  const [horarios, setHorarios] = useState<any[]>([]);
+  const [periodos, setPeriodos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchData()
-  }, [fetchData])
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
 
-  return {
-    clientes,
-    contratos,
-    planos,
-    pacotes,
-    horarios,
-    periodos,
-    profissionais,
-    loading,
-    error,
-    refetch: fetchData,
-  }
-}
+        // Clientes
+        const { data: clientesData, error: clientesError } = await supabase
+          .from('clientes')
+          .select('*')
+          .eq('status', 'ativo')
+          .order('nome', { ascending: true })
+          .limit(100);
+
+        if (clientesError) throw clientesError;
+        setClientes(clientesData || []);
+
+        // Contratos
+        const { data: contratosData, error: contratosError } = await supabase
+          .from('contratos_cliente')
+          .select('*')
+          .eq('status', 'ativo')
+          .order('data_inicio', { ascending: false })
+          .limit(100);
+
+        if (contratosError) throw contratosError;
+        setContratos(contratosData || []);
+
+        // Planos
+        const { data: planosData, error: planosError } = await supabase
+          .from('planos')
+          .select('*')
+          .eq('ativo', true)
+          .order('nome', { ascending: true })
+          .limit(100);
+
+        if (planosError) throw planosError;
+        setPlanos(planosData || []);
+
+        // Pacotes
+        const { data: pacotesData, error: pacotesError } = await supabase
+          .from('pacotes')
+          .select('*')
+          .eq('ativo', true)
+          .order('nome', { ascending: true })
+          .limit(100);
+
+        if (pacotesError) throw pacotesError;
+        setPacotes(pacotesData || []);
+
+        // Horários
+        const { data: horariosData, error: horariosError } = await supabase
+          .from('horarios_funcionamento')
+          .select('*')
+          .eq('ativo', true)
+          .order('dia_semana', { ascending: true })
+          .limit(100);
+
+        if (horariosError) throw horariosError;
+        setHorarios(horariosData || []);
+
+        // Períodos
+        const { data: periodosData, error: periodosError } = await supabase
+          .from('periodos_fechamento')
+          .select('*')
+          .gte('data_fim', new Date().toISOString().split('T')[0])
+          .order('data_inicio', { ascending: true })
+          .limit(100);
+
+        if (periodosError) throw periodosError;
+        setPeriodos(periodosData || []);
+
+      } catch (err: any) {
+        setError(err.message || 'Erro ao carregar dados');
+        console.error('Erro em useClientesData:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+    
+    // Revalidar a cada 5 minutos
+    const interval = setInterval(fetchData, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return { clientes, contratos, planos, pacotes, horarios, periodos, loading, error };
+};

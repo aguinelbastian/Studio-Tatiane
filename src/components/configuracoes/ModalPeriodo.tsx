@@ -81,7 +81,7 @@ export function ModalPeriodo({ open, onOpenChange, periodo, profissionais, onSuc
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="studio">Studio Inteiro</SelectItem>
-                {profissionais.map((p: any) => (
+                {profissionais?.map((p: any) => (
                   <SelectItem key={p.id} value={p.id}>
                     {p.nome}
                   </SelectItem>

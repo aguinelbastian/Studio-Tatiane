@@ -111,7 +111,7 @@ export default function MainLayout() {
                 <AvatarImage
                   src={`https://img.usecurling.com/ppl/thumbnail?gender=${user?.role === 'Admin' ? 'female' : 'male'}&seed=${user?.id}`}
                 />
-                <AvatarFallback>{user?.name.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{user?.name?.charAt(0) || 'U'}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
                 <span className="text-sm font-medium truncate">{user?.name}</span>

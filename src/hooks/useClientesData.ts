@@ -1,7 +1,7 @@
 // src/hooks/useClientesData.ts - VERSÃO CORRIGIDA
 
 import { useEffect, useState } from 'react'
-import { supabase } from '@/utils/supabaseClient'
+import { supabase } from '@/lib/supabase/client'
 
 export const useClientesData = () => {
   const [clientes, setClientes] = useState<any[]>([])

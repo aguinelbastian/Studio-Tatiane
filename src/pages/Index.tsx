@@ -1,12 +1,18 @@
-/* Home Page - Replace this page layout, components, content, behavior with what you want and translate to the language of the user */
+import { Navigate } from 'react-router-dom'
+import useAuthStore from '@/stores/useAuthStore'
+
 const Index = () => {
-  return (
-    <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">
-        This is a example page ready to be rewritten with your own content
-      </h1>
-    </div>
-  )
+  const { user, isLoading } = useAuthStore()
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  return user ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
 }
 
 export default Index

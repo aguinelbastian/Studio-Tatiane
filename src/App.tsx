@@ -1,28 +1,52 @@
-/* Main App Component - Handles routing (using react-router-dom), query client and other providers - use this file to add all routes */
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Toaster } from '@/components/ui/toaster'
 import { Toaster as Sonner } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import Index from './pages/Index'
-import NotFound from './pages/NotFound'
-import Layout from './components/Layout'
+import { AuthProvider } from '@/stores/useAuthStore'
+import { ProtectedRoute } from '@/components/ProtectedRoute'
 
-// ONLY IMPORT AND RENDER WORKING PAGES, NEVER ADD PLACEHOLDER COMPONENTS OR PAGES IN THIS FILE
-// AVOID REMOVING ANY CONTEXT PROVIDERS FROM THIS FILE (e.g. TooltipProvider, Toaster, Sonner)
+import Index from './pages/Index'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Agendamentos from './pages/Agendamentos'
+import Clientes from './pages/Clientes'
+import Contratos from './pages/Contratos'
+import Configuracoes from './pages/Configuracoes'
+import Relatorios from './pages/Relatorios'
+import NotFound from './pages/NotFound'
+import MainLayout from './components/layouts/MainLayout'
 
 const App = () => (
   <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Routes>
-        <Route element={<Layout />}>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Routes>
+          {/* Public Routes */}
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES MUST BE ADDED HERE */}
-        </Route>
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </TooltipProvider>
+          <Route path="/login" element={<Login />} />
+
+          {/* Protected Routes - All Roles */}
+          <Route element={<ProtectedRoute />}>
+            <Route element={<MainLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/agendamentos" element={<Agendamentos />} />
+              <Route path="/clientes" element={<Clientes />} />
+              <Route path="/contratos" element={<Contratos />} />
+
+              {/* Admin Only Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['Admin']} />}>
+                <Route path="/configuracoes" element={<Configuracoes />} />
+                <Route path="/relatorios" element={<Relatorios />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </TooltipProvider>
+    </AuthProvider>
   </BrowserRouter>
 )
 

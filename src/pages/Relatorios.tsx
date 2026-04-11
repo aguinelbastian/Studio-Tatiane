@@ -1,94 +1,63 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts'
-import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
-
-const dataFaturamento = [
-  { mes: 'Jan', valor: 12500 },
-  { mes: 'Fev', valor: 14200 },
-  { mes: 'Mar', valor: 13800 },
-  { mes: 'Abr', valor: 16500 },
-  { mes: 'Mai', valor: 15900 },
-  { mes: 'Jun', valor: 18000 },
-]
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useRelatoriosData } from '@/hooks/useRelatoriosData'
+import { TabReceitas } from '@/components/relatorios/TabReceitas'
+import { TabOcupacao } from '@/components/relatorios/TabOcupacao'
+import { TabComportamento } from '@/components/relatorios/TabComportamento'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
+import { Printer } from 'lucide-react'
+import { useRelatoriosExportacao } from '@/hooks/useRelatoriosExportacao'
 
 export default function Relatorios() {
+  const { receitas, ocupacao, comportamento, loading } = useRelatoriosData()
+  const { exportarPDF } = useRelatoriosExportacao()
+
+  if (loading) {
+    return (
+      <div className="p-8 space-y-6">
+        <Skeleton className="h-12 w-full max-w-sm" />
+        <Skeleton className="h-[200px] w-full" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
+  }
+
   return (
-    <div className="space-y-6 animate-fade-in-up">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight">Relatórios Financeiros</h2>
-        <p className="text-muted-foreground">
-          Visão analítica do faturamento e comissões (Acesso restrito ao Admin).
-        </p>
+    <div className="space-y-6 animate-fade-in-up pb-10" id="relatorio-container">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-bold tracking-tight">Relatórios Operacionais</h2>
+          <p className="text-muted-foreground">
+            Visão analítica de receitas, ocupação e comportamento de alunos.
+          </p>
+        </div>
+        <Button variant="outline" className="print:hidden w-fit" onClick={exportarPDF}>
+          <Printer className="w-4 h-4 mr-2" />
+          Imprimir / PDF
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="bg-primary/5 border-primary/20">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento Estimado (Mês)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-primary">R$ 18.000,00</div>
-            <p className="text-xs text-muted-foreground mt-1">+12% em relação ao mês anterior</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Comissões a Pagar</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">R$ 4.250,00</div>
-            <p className="text-xs text-muted-foreground mt-1">Referente a fechamento do dia 05</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Inadimplência Estimada</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-destructive">2.4%</div>
-            <p className="text-xs text-muted-foreground mt-1">Abaixo da média histórica (3%)</p>
-          </CardContent>
-        </Card>
-      </div>
+      <Tabs defaultValue="receitas" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 mb-6 print:hidden">
+          <TabsTrigger value="receitas">Receitas</TabsTrigger>
+          <TabsTrigger value="ocupacao">Ocupação</TabsTrigger>
+          <TabsTrigger value="comportamento">Comportamento</TabsTrigger>
+        </TabsList>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Evolução de Faturamento Anual</CardTitle>
-          <CardDescription>Faturamento bruto consolidado mês a mês.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={{
-              valor: {
-                label: 'Faturamento Bruto (R$)',
-                color: 'hsl(var(--primary))',
-              },
-            }}
-            className="h-[400px] w-full mt-4"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={dataFaturamento} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-                <XAxis
-                  dataKey="mes"
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `R$ ${value}`}
-                />
-                <Tooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="valor" fill="var(--color-valor)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
+        {/* On print, show active tab only, or we can use print styles to handle visibility if needed.
+            TabsContent already manages visibility perfectly for screen and print */}
+        <TabsContent value="receitas" className="print:block mt-0 border-none p-0">
+          <TabReceitas dados={receitas} />
+        </TabsContent>
+
+        <TabsContent value="ocupacao" className="print:block mt-0 border-none p-0">
+          <TabOcupacao dados={ocupacao} />
+        </TabsContent>
+
+        <TabsContent value="comportamento" className="print:block mt-0 border-none p-0">
+          <TabComportamento dados={comportamento} />
+        </TabsContent>
+      </Tabs>
     </div>
   )
 }

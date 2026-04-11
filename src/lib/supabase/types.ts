@@ -1103,6 +1103,8 @@ export const Constants = {
 
 // --- ROW LEVEL SECURITY POLICIES ---
 // Table: agendamentos
+//   Policy "admin_all_agendamentos" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_agendamentos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_agendamentos" (INSERT, PERMISSIVE) roles={public}
@@ -1111,6 +1113,12 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_agendamentos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_insert_agendamentos" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
+//   Policy "prof_select_agendamentos" (SELECT, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
+//   Policy "prof_update_agendamentos" (UPDATE, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
 //   Policy "professor_delete_agendamentos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 //   Policy "professor_insert_agendamentos" (INSERT, PERMISSIVE) roles={public}
@@ -1120,13 +1128,19 @@ export const Constants = {
 //   Policy "professor_update_agendamentos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 // Table: audit_log
+//   Policy "admin_all_audit" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_insert_audit" (INSERT, PERMISSIVE) roles={public}
 //     WITH CHECK: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_select_audit" (SELECT, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_deny_audit" (ALL, PERMISSIVE) roles={public}
+//     USING: false
 //   Policy "professor_no_access_audit" (ALL, PERMISSIVE) roles={public}
 //     USING: false
 // Table: clientes
+//   Policy "admin_all_clientes" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_clientes" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_clientes" (INSERT, PERMISSIVE) roles={public}
@@ -1135,6 +1149,12 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_clientes" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_insert_clientes" (INSERT, PERMISSIVE) roles={public}
+//     WITH CHECK: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
+//   Policy "prof_select_clientes" (SELECT, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
+//   Policy "prof_update_clientes" (UPDATE, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
 //   Policy "professor_delete_clientes" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 //   Policy "professor_insert_clientes" (INSERT, PERMISSIVE) roles={public}
@@ -1144,6 +1164,8 @@ export const Constants = {
 //   Policy "professor_update_clientes" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 // Table: consumo_pacote
+//   Policy "admin_all_consumo" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_consumo" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_consumo" (INSERT, PERMISSIVE) roles={public}
@@ -1153,6 +1175,8 @@ export const Constants = {
 //   Policy "admin_update_consumo" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 // Table: contratos_cliente
+//   Policy "admin_all_contratos" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_contratos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_contratos" (INSERT, PERMISSIVE) roles={public}
@@ -1161,9 +1185,13 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_contratos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_select_contratos" (SELECT, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
 //   Policy "professor_select_contratos" (SELECT, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 // Table: horarios_funcionamento
+//   Policy "admin_all_horarios" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_horarios" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_horarios" (INSERT, PERMISSIVE) roles={public}
@@ -1173,6 +1201,8 @@ export const Constants = {
 //   Policy "admin_update_horarios" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 // Table: pacotes
+//   Policy "admin_all_pacotes" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_pacotes" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_pacotes" (INSERT, PERMISSIVE) roles={public}
@@ -1181,9 +1211,13 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_pacotes" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_select_pacotes" (SELECT, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
 //   Policy "professor_select_pacotes" (SELECT, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 // Table: pagamentos
+//   Policy "admin_all_pagamentos" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_pagamentos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_pagamentos" (INSERT, PERMISSIVE) roles={public}
@@ -1192,9 +1226,13 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_pagamentos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_deny_pagamentos" (ALL, PERMISSIVE) roles={public}
+//     USING: false
 //   Policy "professor_no_access_pagamentos" (ALL, PERMISSIVE) roles={public}
 //     USING: false
 // Table: periodos_fechamento
+//   Policy "admin_all_periodos" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_periodos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_periodos" (INSERT, PERMISSIVE) roles={public}
@@ -1204,6 +1242,8 @@ export const Constants = {
 //   Policy "admin_update_periodos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 // Table: planos
+//   Policy "admin_all_planos" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_planos" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_planos" (INSERT, PERMISSIVE) roles={public}
@@ -1212,9 +1252,13 @@ export const Constants = {
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_update_planos" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
+//   Policy "prof_select_planos" (SELECT, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['renata@studio.com'::text, 'miriam@studio.com'::text]))
 //   Policy "professor_select_planos" (SELECT, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['professor'::character varying, 'massoterapeuta'::character varying])::text[]))))
 // Table: profissionais
+//   Policy "admin_all_profissionais" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_profissionais" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_profissionais" (INSERT, PERMISSIVE) roles={public}
@@ -1224,6 +1268,8 @@ export const Constants = {
 //   Policy "admin_update_profissionais" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 // Table: reposicoes
+//   Policy "admin_all_reposicoes" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_reposicoes" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_reposicoes" (INSERT, PERMISSIVE) roles={public}
@@ -1233,6 +1279,8 @@ export const Constants = {
 //   Policy "admin_update_reposicoes" (UPDATE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios.id    FROM usuarios   WHERE ((usuarios.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 // Table: usuarios
+//   Policy "admin_all_usuarios" (ALL, PERMISSIVE) roles={public}
+//     USING: ((auth.jwt() ->> 'email'::text) = ANY (ARRAY['tatiane@studio.com'::text, 'aguinel@studio.com'::text]))
 //   Policy "admin_delete_usuarios" (DELETE, PERMISSIVE) roles={public}
 //     USING: (auth.uid() IN ( SELECT usuarios_1.id    FROM usuarios usuarios_1   WHERE ((usuarios_1.role)::text = ANY ((ARRAY['admin'::character varying, 'superuser'::character varying])::text[]))))
 //   Policy "admin_insert_usuarios" (INSERT, PERMISSIVE) roles={public}

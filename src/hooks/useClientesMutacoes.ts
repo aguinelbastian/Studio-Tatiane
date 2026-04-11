@@ -47,17 +47,15 @@ export function useClientesMutacoes(onSuccess?: () => void) {
           .eq('id', id)
         if (error) throw error
         if (reembolso > 0) {
-          await supabase
-            .from('pagamentos')
-            .insert([
-              {
-                contrato_id: id,
-                valor: -reembolso,
-                metodo: 'transferencia',
-                status: 'confirmado',
-                observacoes: 'Reembolso',
-              },
-            ])
+          await supabase.from('pagamentos').insert([
+            {
+              contrato_id: id,
+              valor: -reembolso,
+              metodo: 'transferencia',
+              status: 'confirmado',
+              observacoes: 'Reembolso',
+            },
+          ])
         }
         toast({ title: `Contrato cancelado. Reembolso: R$ ${reembolso.toFixed(2)}` })
         if (onSuccess) onSuccess()

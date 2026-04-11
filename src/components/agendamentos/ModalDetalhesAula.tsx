@@ -21,7 +21,10 @@ export function ModalDetalhesAula({ isOpen, onClose, agendamento, onAtualizar }:
   const isAgendado = agendamento.status === 'agendado'
   const isPassado = new Date(agendamento.data_hora) <= new Date()
 
-  const handleAcao = async (acaoFn: Function, messageSuccess: string) => {
+  const handleAcao = async (
+    acaoFn: (id: string) => Promise<{ sucesso: boolean; erro?: string; com_reposicao?: boolean }>,
+    messageSuccess: string,
+  ) => {
     setLoading(true)
     const res = await acaoFn(agendamento.id)
     setLoading(false)

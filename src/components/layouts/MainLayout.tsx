@@ -147,4 +147,6 @@ export default function MainLayout() {
           </main>
         </div>
       </div>
-    </SidebarProvider
+    </SidebarProvider>
+  )
+}

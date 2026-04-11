@@ -1,5 +1,3 @@
-// src/hooks/useClientesData.ts - VERSÃO CORRIGIDA
-
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 
@@ -14,89 +12,91 @@ export const useClientesData = () => {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let isMounted = true
+
     const fetchData = async () => {
       try {
         setLoading(true)
         setError(null)
 
-        // Clientes
-        const { data: clientesData, error: clientesError } = await supabase
-          .from('clientes')
-          .select('*')
-          .eq('status', 'ativo')
-          .order('nome', { ascending: true })
-          .limit(100)
+        const [
+          { data: clientesData, error: clientesError },
+          { data: contratosData, error: contratosError },
+          { data: planosData, error: planosError },
+          { data: pacotesData, error: pacotesError },
+          { data: horariosData, error: horariosError },
+          { data: periodosData, error: periodosError },
+        ] = await Promise.all([
+          supabase
+            .from('clientes')
+            .select('*')
+            .eq('status', 'ativo')
+            .order('nome', { ascending: true })
+            .limit(500),
+          supabase
+            .from('contratos_cliente')
+            .select('*')
+            .eq('status', 'ativo')
+            .order('data_inicio', { ascending: false })
+            .limit(500),
+          supabase
+            .from('planos')
+            .select('*')
+            .eq('ativo', true)
+            .order('nome', { ascending: true })
+            .limit(100),
+          supabase
+            .from('pacotes')
+            .select('*')
+            .eq('ativo', true)
+            .order('nome', { ascending: true })
+            .limit(100),
+          supabase
+            .from('horarios_funcionamento')
+            .select('*')
+            .eq('ativo', true)
+            .order('dia_semana', { ascending: true })
+            .limit(100),
+          supabase
+            .from('periodos_fechamento')
+            .select('*')
+            .gte('data_fim', new Date().toISOString().split('T')[0])
+            .order('data_inicio', { ascending: true })
+            .limit(100),
+        ])
 
         if (clientesError) throw clientesError
-        setClientes(clientesData || [])
-
-        // Contratos
-        const { data: contratosData, error: contratosError } = await supabase
-          .from('contratos_cliente')
-          .select('*')
-          .eq('status', 'ativo')
-          .order('data_inicio', { ascending: false })
-          .limit(100)
-
         if (contratosError) throw contratosError
-        setContratos(contratosData || [])
-
-        // Planos
-        const { data: planosData, error: planosError } = await supabase
-          .from('planos')
-          .select('*')
-          .eq('ativo', true)
-          .order('nome', { ascending: true })
-          .limit(100)
-
         if (planosError) throw planosError
-        setPlanos(planosData || [])
-
-        // Pacotes
-        const { data: pacotesData, error: pacotesError } = await supabase
-          .from('pacotes')
-          .select('*')
-          .eq('ativo', true)
-          .order('nome', { ascending: true })
-          .limit(100)
-
         if (pacotesError) throw pacotesError
-        setPacotes(pacotesData || [])
-
-        // Horários
-        const { data: horariosData, error: horariosError } = await supabase
-          .from('horarios_funcionamento')
-          .select('*')
-          .eq('ativo', true)
-          .order('dia_semana', { ascending: true })
-          .limit(100)
-
         if (horariosError) throw horariosError
-        setHorarios(horariosData || [])
-
-        // Períodos
-        const { data: periodosData, error: periodosError } = await supabase
-          .from('periodos_fechamento')
-          .select('*')
-          .gte('data_fim', new Date().toISOString().split('T')[0])
-          .order('data_inicio', { ascending: true })
-          .limit(100)
-
         if (periodosError) throw periodosError
-        setPeriodos(periodosData || [])
+
+        if (isMounted) {
+          setClientes(clientesData || [])
+          setContratos(contratosData || [])
+          setPlanos(planosData || [])
+          setPacotes(pacotesData || [])
+          setHorarios(horariosData || [])
+          setPeriodos(periodosData || [])
+        }
       } catch (err: any) {
-        setError(err.message || 'Erro ao carregar dados')
-        console.error('Erro em useClientesData:', err)
+        if (isMounted) {
+          setError(err.message || 'Erro ao carregar dados')
+          console.error('Erro em useClientesData:', err)
+        }
       } finally {
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
 
     fetchData()
-
-    // Revalidar a cada 5 minutos
     const interval = setInterval(fetchData, 5 * 60 * 1000)
-    return () => clearInterval(interval)
+
+    return () => {
+      isMounted = false
+      clearInterval(interval)
+    }
   }, [])
 
   return { clientes, contratos, planos, pacotes, horarios, periodos, loading, error }

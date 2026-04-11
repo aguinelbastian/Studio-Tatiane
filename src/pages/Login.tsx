@@ -12,7 +12,6 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { supabase } from '@/lib/supabase'
 import { Leaf, Loader2 } from 'lucide-react'
 import useAuthStore from '@/stores/useAuthStore'
 
@@ -22,7 +21,7 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
   const { toast } = useToast()
-  const { setUser, user } = useAuthStore()
+  const { user, signIn } = useAuthStore()
 
   // Se já está logado, redireciona
   if (user) {
@@ -45,50 +44,26 @@ export default function Login() {
     setIsLoading(true)
 
     try {
-      // Validar contra tabela usuarios (autenticação customizada)
-      const { data, error } = await supabase
-        .from('usuarios')
-        .select('id, email, nome, role, status')
-        .eq('email', email)
-        .eq('status', 'ativo')
-        .single()
+      const { error } = await signIn(email, password)
 
-      if (error || !data) {
+      if (error) {
         toast({
           title: 'Erro de autenticação',
-          description: 'E-mail ou senha inválidos.',
+          description:
+            error.message === 'Invalid login credentials'
+              ? 'E-mail ou senha inválidos.'
+              : error.message,
           variant: 'destructive',
         })
         setIsLoading(false)
         return
       }
-
-      // Validação simples de senha (em produção, usar bcrypt no backend)
-      // Por enquanto, aceita qualquer senha para usuários válidos
-      if (password !== 'senha123') {
-        toast({
-          title: 'Erro de autenticação',
-          description: 'E-mail ou senha inválidos.',
-          variant: 'destructive',
-        })
-        setIsLoading(false)
-        return
-      }
-
-      // Autenticação bem-sucedida
-      setUser({
-        id: data.id,
-        email: data.email,
-        nome: data.nome,
-        role: data.role,
-      })
 
       toast({
         title: 'Bem-vindo(a)!',
-        description: `Login realizado com sucesso. Bem-vindo, ${data.nome}!`,
+        description: `Login realizado com sucesso.`,
       })
 
-      // Redirecionar para dashboard
       navigate('/dashboard', { replace: true })
     } catch (err: any) {
       toast({
@@ -153,11 +128,11 @@ export default function Login() {
             </div>
 
             <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-4">
-              <p className="font-medium mb-1">Credenciais de Teste:</p>
-              <p>Tatiane: tatiane@studio.com / senha123</p>
-              <p>Renata: renata@studio.com / senha123</p>
-              <p>Miriam: miriam@studio.com / senha123</p>
-              <p>Aguinel: aguinel@studio.com / senha123</p>
+              <p className="font-medium mb-1">Credenciais de Teste (Senha: senha123):</p>
+              <p>Tatiane: tatiane@studio.com</p>
+              <p>Renata: renata@studio.com</p>
+              <p>Miriam: miriam@studio.com</p>
+              <p>Aguinel: aguinel@studio.com</p>
             </div>
           </CardContent>
 

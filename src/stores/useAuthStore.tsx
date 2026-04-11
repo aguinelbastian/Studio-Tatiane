@@ -1,60 +1,117 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { User } from '@/types'
+import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { User, Session } from '@supabase/supabase-js'
 import { supabase } from '@/lib/supabase/client'
 
-interface AuthState {
-  user: User | null
-  isLoading: boolean
-  login: (user: User) => void
-  logout: () => void
+export interface CustomUser {
+  id: string
+  email: string
+  nome: string
+  role: string
 }
 
-const AuthContext = createContext<AuthState | null>(null)
-
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
-    // Check initial session
-    const initAuth = async () => {
-      const { data } = await supabase.auth.getSession()
-      if (data.session?.user) {
-        setUser(data.session.user)
-      }
-      setIsLoading(false)
-    }
-
-    initAuth()
-
-    // Listen for changes
-    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        setUser(session.user)
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null)
-      }
-    })
-
-    return () => {
-      authListener.subscription.unsubscribe()
-    }
-  }, [])
-
-  const login = (newUser: User) => setUser(newUser)
-  const logout = () => setUser(null)
-
-  return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  )
+interface AuthContextType {
+  user: CustomUser | null
+  supabaseUser: User | null
+  session: Session | null
+  signIn: (email: string, password: string) => Promise<{ error: any }>
+  signOut: () => Promise<{ error: any }>
+  loading: boolean
+  setUser: (user: CustomUser | null) => void
 }
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export default function useAuthStore() {
   const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuthStore must be used within an AuthProvider')
-  }
+  if (!context) throw new Error('useAuthStore must be used within an AuthProvider')
   return context
+}
+
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [supabaseUser, setSupabaseUser] = useState<User | null>(null)
+  const [user, setUser] = useState<CustomUser | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      setSession(session)
+      setSupabaseUser(session?.user ?? null)
+      if (!session?.user) {
+        setUser(null)
+      }
+      setLoading(false)
+    })
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      setSupabaseUser(session?.user ?? null)
+      setLoading(false)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (!supabaseUser || !supabaseUser.email) return
+
+    let isMounted = true
+
+    const fetchProfile = async () => {
+      try {
+        const { data } = await supabase
+          .from('usuarios')
+          .select('*')
+          .eq('email', supabaseUser.email)
+          .single()
+
+        if (isMounted) {
+          if (data) {
+            setUser({
+              id: data.id,
+              email: data.email,
+              nome: data.nome,
+              role: data.role,
+            })
+          } else {
+            setUser({
+              id: supabaseUser.id,
+              email: supabaseUser.email || '',
+              nome: supabaseUser.user_metadata?.name || 'Usuário',
+              role: 'professor',
+            })
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching user profile', err)
+      }
+    }
+
+    fetchProfile()
+
+    return () => {
+      isMounted = false
+    }
+  }, [supabaseUser])
+
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    return { error }
+  }
+
+  const signOut = async () => {
+    setUser(null)
+    const { error } = await supabase.auth.signOut()
+    return { error }
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{ user, supabaseUser, session, signIn, signOut, loading, setUser }}
+    >
+      {children}
+    </AuthContext.Provider>
+  )
 }

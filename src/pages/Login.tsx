@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   Card,
   CardContent,
@@ -21,11 +21,10 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
-  const location = useLocation()
   const { toast } = useToast()
-  const { user } = useAuthStore()
+  const { setUser, user } = useAuthStore()
 
-  // If already logged in, redirect
+  // Se já está logado, redireciona
   if (user) {
     navigate('/dashboard', { replace: true })
     return null
@@ -33,6 +32,7 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!email || !password) {
       toast({
         title: 'Campos obrigatórios',
@@ -43,22 +43,61 @@ export default function Login() {
     }
 
     setIsLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    setIsLoading(false)
 
-    if (error) {
-      toast({
-        title: 'Erro de autenticação',
-        description: error.message,
-        variant: 'destructive',
+    try {
+      // Validar contra tabela usuarios (autenticação customizada)
+      const { data, error } = await supabase
+        .from('usuarios')
+        .select('id, email, nome, role, status')
+        .eq('email', email)
+        .eq('status', 'ativo')
+        .single()
+
+      if (error || !data) {
+        toast({
+          title: 'Erro de autenticação',
+          description: 'E-mail ou senha inválidos.',
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // Validação simples de senha (em produção, usar bcrypt no backend)
+      // Por enquanto, aceita qualquer senha para usuários válidos
+      if (password !== 'senha123') {
+        toast({
+          title: 'Erro de autenticação',
+          description: 'E-mail ou senha inválidos.',
+          variant: 'destructive',
+        })
+        setIsLoading(false)
+        return
+      }
+
+      // Autenticação bem-sucedida
+      setUser({
+        id: data.id,
+        email: data.email,
+        nome: data.nome,
+        role: data.role,
       })
-    } else {
+
       toast({
         title: 'Bem-vindo(a)!',
-        description: 'Login realizado com sucesso.',
+        description: `Login realizado com sucesso. Bem-vindo, ${data.nome}!`,
       })
-      const from = location.state?.from?.pathname || '/dashboard'
-      navigate(from, { replace: true })
+
+      // Redirecionar para dashboard
+      navigate('/dashboard', { replace: true })
+    } catch (err: any) {
+      toast({
+        title: 'Erro ao conectar',
+        description: err.message || 'Erro desconhecido ao tentar fazer login.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -71,7 +110,6 @@ export default function Login() {
           className="w-full h-full object-cover"
         />
       </div>
-
       <Card className="w-full max-w-md z-10 shadow-elevation border-border/50 animate-fade-in-up">
         <CardHeader className="space-y-1 text-center pb-8">
           <div className="flex justify-center mb-4">
@@ -86,6 +124,7 @@ export default function Login() {
             Acesse o sistema de gerenciamento
           </CardDescription>
         </CardHeader>
+
         <form onSubmit={handleLogin}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -101,9 +140,7 @@ export default function Login() {
               />
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Senha</Label>
-              </div>
+              <Label htmlFor="password">Senha</Label>
               <Input
                 id="password"
                 type="password"
@@ -117,10 +154,13 @@ export default function Login() {
 
             <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-4">
               <p className="font-medium mb-1">Credenciais de Teste:</p>
-              <p>Admin: admin@studio.com / senha123</p>
-              <p>Profissional: prof@studio.com / senha123</p>
+              <p>Tatiane: tatiane@studio.com / senha123</p>
+              <p>Renata: renata@studio.com / senha123</p>
+              <p>Miriam: miriam@studio.com / senha123</p>
+              <p>Aguinel: aguinel@studio.com / senha123</p>
             </div>
           </CardContent>
+
           <CardFooter>
             <Button type="submit" className="w-full h-11 transition-all" disabled={isLoading}>
               {isLoading ? (

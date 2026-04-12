@@ -25,9 +25,10 @@ export default function Clientes() {
   const [clienteEdicao, setClienteEdicao] = useState<any>(null)
 
   const clientesFiltrados = clientes.filter(
-    (c) =>
+    (c: any) =>
       c.nome.toLowerCase().includes(busca.toLowerCase()) ||
-      (c.email && c.email.toLowerCase().includes(busca.toLowerCase())),
+      (c.email && c.email.toLowerCase().includes(busca.toLowerCase())) ||
+      (c.cpf && c.cpf.includes(busca.replace(/\D/g, ''))),
   )
 
   const handleEdit = (cliente: any) => {
@@ -86,17 +87,23 @@ export default function Clientes() {
                   <TableHead>Nome</TableHead>
                   <TableHead>Telefone</TableHead>
                   <TableHead>E-mail</TableHead>
+                  <TableHead>CPF</TableHead>
                   <TableHead>Início</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {clientesFiltrados.map((item) => (
+                {clientesFiltrados.map((item: any) => (
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">{item.nome}</TableCell>
                     <TableCell>{item.telefone}</TableCell>
                     <TableCell>{item.email}</TableCell>
+                    <TableCell>
+                      {item.cpf
+                        ? item.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+                        : '-'}
+                    </TableCell>
                     <TableCell>{new Date(item.data_inicio).toLocaleDateString('pt-BR')}</TableCell>
                     <TableCell>
                       <Badge
@@ -120,7 +127,7 @@ export default function Clientes() {
                 ))}
                 {clientesFiltrados.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-4">
+                    <TableCell colSpan={7} className="text-center py-4">
                       Nenhum cliente encontrado.
                     </TableCell>
                   </TableRow>

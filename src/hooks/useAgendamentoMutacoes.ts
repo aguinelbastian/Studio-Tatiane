@@ -147,17 +147,38 @@ export const useAgendamentoMutacoes = () => {
     }
   }
 
-  const marcarRealizado = async (agendamento_id: string) => {
+  const marcarStatusAula = async (
+    agendamento_id: string,
+    status: 'realizado' | 'falta_sem_aviso',
+  ) => {
     try {
-      const { error } = await supabase
-        .from('agendamentos')
-        .update({ status: 'realizado' })
-        .eq('id', agendamento_id)
+      const { data, error } = await supabase.functions.invoke('calcular-repasse-aula', {
+        body: { agendamento_id, status },
+      })
       if (error) throw error
-      return { sucesso: true }
+      if (!data?.sucesso) throw new Error(data?.erro || 'Erro desconhecido')
+      return { sucesso: true, repasse: data.repasse, alerta: data.alerta }
     } catch (err: any) {
-      return { sucesso: false, erro: err.message }
+      console.warn('Edge function failed, running local fallback', err)
+      try {
+        const { error } = await supabase
+          .from('agendamentos')
+          .update({ status })
+          .eq('id', agendamento_id)
+        if (error) throw error
+        return { sucesso: true }
+      } catch (fallbackErr: any) {
+        return { sucesso: false, erro: fallbackErr.message }
+      }
     }
+  }
+
+  const marcarRealizado = async (agendamento_id: string) => {
+    return marcarStatusAula(agendamento_id, 'realizado')
+  }
+
+  const marcarFaltaSemAviso = async (agendamento_id: string) => {
+    return marcarStatusAula(agendamento_id, 'falta_sem_aviso')
   }
 
   const deletarAgendamento = async (agendamento_id: string) => {
@@ -178,6 +199,7 @@ export const useAgendamentoMutacoes = () => {
     cancelarAgendamento,
     marcarReposicao,
     marcarRealizado,
+    marcarFaltaSemAviso,
     deletarAgendamento,
   }
 }

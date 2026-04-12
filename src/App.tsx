@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard'
 import Agendamentos from './pages/Agendamentos'
 import Clientes from './pages/Clientes'
 import Contratos from './pages/Contratos'
+import Pagamentos from './pages/Pagamentos'
 import Configuracoes from './pages/Configuracoes'
 import Relatorios from './pages/Relatorios'
 import Usuarios from './pages/Usuarios'
@@ -37,6 +38,9 @@ const App = () => (
               <Route path="/contratos" element={<Contratos />} />
 
               {/* Admin Only Routes */}
+              <Route element={<ProtectedRoute allowedRoles={['admin', 'superuser']} />}>
+                <Route path="/pagamentos" element={<Pagamentos />} />
+              </Route>
               <Route element={<ProtectedRoute allowedRoles={['admin', 'superuser']} />}>
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />

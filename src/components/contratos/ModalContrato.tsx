@@ -43,6 +43,8 @@ export function ModalContrato({
         data_inicio: contrato.data_inicio,
         preco_pago: contrato.preco_pago,
         status: contrato.status,
+        modelo_cobranca: contrato.modelo_cobranca || 'antecipado',
+        quantidade_parcelas: contrato.quantidade_parcelas || 1,
       })
     } else {
       reset({
@@ -53,9 +55,13 @@ export function ModalContrato({
         data_inicio: new Date().toISOString().split('T')[0],
         preco_pago: 0,
         status: 'ativo',
+        modelo_cobranca: 'antecipado',
+        quantidade_parcelas: 1,
       })
     }
   }, [contrato, reset, open])
+
+  const modeloCobranca = watch('modelo_cobranca')
 
   const handleEntityChange = (val: string) => {
     if (tipo === 'plano') {
@@ -152,10 +158,35 @@ export function ModalContrato({
               <Input {...register('data_inicio')} type="date" />
             </div>
             <div className="space-y-2">
-              <Label>Preço Pago (R$)</Label>
+              <Label>Preço Pago/Total (R$)</Label>
               <Input {...register('preco_pago')} type="number" step="0.01" />
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>Modelo de Cobrança</Label>
+            <RadioGroup
+              value={modeloCobranca}
+              onValueChange={(v) => setValue('modelo_cobranca', v)}
+              className="flex space-x-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="antecipado" id="mod1" />
+                <Label htmlFor="mod1">Antecipado</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="parcelado" id="mod2" />
+                <Label htmlFor="mod2">Parcelado</Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {modeloCobranca === 'parcelado' && (
+            <div className="space-y-2">
+              <Label>Quantidade de Parcelas</Label>
+              <Input {...register('quantidade_parcelas')} type="number" min="1" />
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="submit">Salvar</Button>

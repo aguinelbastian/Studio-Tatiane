@@ -23,6 +23,7 @@ import {
   LogOut,
   Leaf,
   Shield,
+  DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -63,6 +64,12 @@ export default function MainLayout() {
       roles: ['admin', 'professor', 'massoterapeuta', 'superuser'],
     },
     { title: 'Relatórios', icon: BarChart3, path: '/relatorios', roles: ['admin', 'superuser'] },
+    {
+      title: 'Pagamentos',
+      icon: DollarSign,
+      path: '/pagamentos',
+      roles: ['admin', 'superuser'],
+    },
     {
       title: 'Usuários',
       icon: Shield,

@@ -14,7 +14,8 @@ import { useAgendamentoMutacoes } from '@/hooks/useAgendamentoMutacoes'
 
 export function ModalDetalhesAula({ isOpen, onClose, agendamento, onAtualizar }: any) {
   const [loading, setLoading] = useState(false)
-  const { cancelarAgendamento, marcarRealizado, deletarAgendamento } = useAgendamentoMutacoes()
+  const { cancelarAgendamento, marcarRealizado, marcarFaltaSemAviso, deletarAgendamento } =
+    useAgendamentoMutacoes()
 
   if (!agendamento) return null
 
@@ -22,14 +23,30 @@ export function ModalDetalhesAula({ isOpen, onClose, agendamento, onAtualizar }:
   const isPassado = new Date(agendamento.data_hora) <= new Date()
 
   const handleAcao = async (
-    acaoFn: (id: string) => Promise<{ sucesso: boolean; erro?: string; com_reposicao?: boolean }>,
+    acaoFn: (
+      id: string,
+    ) => Promise<{
+      sucesso: boolean
+      erro?: string
+      com_reposicao?: boolean
+      repasse?: any
+      alerta?: string
+    }>,
     messageSuccess: string,
   ) => {
     setLoading(true)
     const res = await acaoFn(agendamento.id)
     setLoading(false)
     if (res.sucesso) {
-      toast.success(res.com_reposicao ? 'Aula cancelada. Reposição gerada.' : messageSuccess)
+      if (res.repasse) {
+        toast.success(
+          `${messageSuccess} Repasse de R$ ${res.repasse.valor.toFixed(2)} registrado para ${res.repasse.profissional}.`,
+        )
+      } else if (res.alerta) {
+        toast.success(`${messageSuccess} (${res.alerta})`)
+      } else {
+        toast.success(res.com_reposicao ? 'Aula cancelada. Reposição gerada.' : messageSuccess)
+      }
       onAtualizar()
       onClose()
     } else {
@@ -89,14 +106,23 @@ export function ModalDetalhesAula({ isOpen, onClose, agendamento, onAtualizar }:
             </Button>
           )}
           {isAgendado && isPassado && (
-            <Button
-              variant="default"
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => handleAcao(marcarRealizado, 'Aula marcada como realizada.')}
-              disabled={loading}
-            >
-              Marcar como Realizada
-            </Button>
+            <>
+              <Button
+                variant="secondary"
+                onClick={() => handleAcao(marcarFaltaSemAviso, 'Falta sem aviso registrada.')}
+                disabled={loading}
+              >
+                Falta sem Aviso
+              </Button>
+              <Button
+                variant="default"
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => handleAcao(marcarRealizado, 'Aula marcada como realizada.')}
+                disabled={loading}
+              >
+                Marcar como Realizada
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"

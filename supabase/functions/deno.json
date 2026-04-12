@@ -1,5 +1,6 @@
 {
   "_versions": {
-    "update-agendamento": 5
+    "update-agendamento": 5,
+    "calcular-repasse-aula": 1
   }
 }

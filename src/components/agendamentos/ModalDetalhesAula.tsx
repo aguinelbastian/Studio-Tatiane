@@ -23,9 +23,7 @@ export function ModalDetalhesAula({ isOpen, onClose, agendamento, onAtualizar }:
   const isPassado = new Date(agendamento.data_hora) <= new Date()
 
   const handleAcao = async (
-    acaoFn: (
-      id: string,
-    ) => Promise<{
+    acaoFn: (id: string) => Promise<{
       sucesso: boolean
       erro?: string
       com_reposicao?: boolean

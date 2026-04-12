@@ -1,5 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import { supabase } from '@/lib/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -20,22 +21,46 @@ import {
 import { useClientesMutacoes } from '@/hooks/useClientesMutacoes'
 import { Switch } from '@/components/ui/switch'
 
-export function ModalHorario({ open, onOpenChange, horario, profissionais, onSuccess }: any) {
+export function ModalHorario({
+  open,
+  onOpenChange,
+  horario,
+  profissionais: profsProp,
+  onSuccess,
+}: any) {
   const { criarHorario, editarHorario } = useClientesMutacoes(onSuccess)
   const { register, handleSubmit, reset, setValue, watch } = useForm()
   const ativo = watch('ativo')
+  const [profissionais, setProfissionais] = useState<any[]>(profsProp || [])
 
   useEffect(() => {
-    if (horario) reset(horario)
-    else
+    const fetchProfissionais = async () => {
+      const { data } = await supabase
+        .from('profissionais')
+        .select('*')
+        .eq('status', 'ativo')
+        .order('nome')
+      if (data) setProfissionais(data)
+    }
+    if (!profsProp || profsProp.length === 0) fetchProfissionais()
+  }, [profsProp])
+
+  useEffect(() => {
+    if (horario) {
+      reset(horario)
+      setValue('profissional_id', horario.profissional_id)
+    } else {
+      const defProfId = profissionais?.[0]?.id || ''
       reset({
         dia_semana: 1,
-        profissional_id: profissionais?.[0]?.id || '',
+        profissional_id: defProfId,
         hora_inicio: '08:00',
         hora_fim: '12:00',
         ativo: true,
       })
-  }, [horario, reset, open, profissionais])
+      setValue('profissional_id', defProfId)
+    }
+  }, [horario, reset, open, profissionais, setValue])
 
   const onSubmit = async (data: any) => {
     if (horario) await editarHorario(horario.id, data)
@@ -58,7 +83,7 @@ export function ModalHorario({ open, onOpenChange, horario, profissionais, onSuc
               defaultValue={horario?.profissional_id || profissionais?.[0]?.id}
             >
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Selecione um profissional" />
               </SelectTrigger>
               <SelectContent>
                 {profissionais?.map((p: any) => (

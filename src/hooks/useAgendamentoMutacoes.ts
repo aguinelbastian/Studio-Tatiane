@@ -194,6 +194,16 @@ export const useAgendamentoMutacoes = () => {
     }
   }
 
+  const editarAgendamento = async (id: string, dados: any) => {
+    try {
+      const { error } = await supabase.from('agendamentos').update(dados).eq('id', id)
+      if (error) throw error
+      return { sucesso: true }
+    } catch (err: any) {
+      return { sucesso: false, erro: err.message }
+    }
+  }
+
   return {
     criarAgendamento,
     cancelarAgendamento,
@@ -201,5 +211,6 @@ export const useAgendamentoMutacoes = () => {
     marcarRealizado,
     marcarFaltaSemAviso,
     deletarAgendamento,
+    editarAgendamento,
   }
 }

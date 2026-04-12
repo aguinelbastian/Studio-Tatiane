@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   Users,
+  UserCog,
   FileText,
   Settings,
   BarChart3,
@@ -74,6 +75,12 @@ export default function MainLayout() {
       title: 'Usuários',
       icon: Shield,
       path: '/usuarios',
+      roles: ['admin', 'superuser'],
+    },
+    {
+      title: 'Profissionais',
+      icon: UserCog,
+      path: '/profissionais',
       roles: ['admin', 'superuser'],
     },
     {

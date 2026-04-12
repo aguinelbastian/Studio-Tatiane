@@ -9,12 +9,12 @@ const corsHeaders = {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
     )
 
     const { agendamento_id, status } = await req.json()
@@ -23,11 +23,13 @@ Deno.serve(async (req: Request) => {
       .from('agendamentos')
       .update({ status })
       .eq('id', agendamento_id)
-    
+
     if (updErr) throw updErr
 
     if (status !== 'realizado' && status !== 'falta_sem_aviso') {
-      return new Response(JSON.stringify({ sucesso: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ sucesso: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     const { data: agendamento } = await supabase
@@ -37,16 +39,21 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (!agendamento || !agendamento.profissional) {
-        return new Response(JSON.stringify({ sucesso: true, alerta: 'Profissional não encontrado' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ sucesso: true, alerta: 'Profissional não encontrado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     const percentual = agendamento.profissional.comissao_percentual || 0
     if (percentual <= 0) {
-        return new Response(JSON.stringify({ sucesso: true, alerta: 'Profissional sem comissão' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ sucesso: true, alerta: 'Profissional sem comissão' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
-    let valor_bruto = 180 
-    
+    let valor_bruto = 180
+
     const { data: consumo } = await supabase
       .from('consumo_pacote')
       .select('contrato:contratos_cliente(*, plano:planos(*), pacote:pacotes(*))')
@@ -77,29 +84,32 @@ Deno.serve(async (req: Request) => {
 
     const valor_repasse = (valor_bruto * percentual) / 100
 
-    const { error: repErr } = await supabase
-      .from('repasses_profissionais')
-      .insert({
-        profissional_id: agendamento.profissional_id,
-        agendamento_id: agendamento_id,
-        valor_bruto,
-        percentual,
-        valor_repasse,
-        data_aula: agendamento.data_hora,
-        status_pagamento: 'pendente'
-      })
-    
+    const { error: repErr } = await supabase.from('repasses_profissionais').insert({
+      profissional_id: agendamento.profissional_id,
+      agendamento_id: agendamento_id,
+      valor_bruto,
+      percentual,
+      valor_repasse,
+      data_aula: agendamento.data_hora,
+      status_pagamento: 'pendente',
+    })
+
     if (repErr) throw repErr
 
-    return new Response(JSON.stringify({ 
-      sucesso: true, 
-      repasse: {
-        profissional: agendamento.profissional.nome,
-        valor: valor_repasse
-      }
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
+    return new Response(
+      JSON.stringify({
+        sucesso: true,
+        repasse: {
+          profissional: agendamento.profissional.nome,
+          valor: valor_repasse,
+        },
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   } catch (error: any) {
-    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

@@ -15,6 +15,7 @@ import Pagamentos from './pages/Pagamentos'
 import Configuracoes from './pages/Configuracoes'
 import Relatorios from './pages/Relatorios'
 import Usuarios from './pages/Usuarios'
+import Profissionais from './pages/Profissionais'
 import NotFound from './pages/NotFound'
 import MainLayout from './components/layouts/MainLayout'
 
@@ -45,6 +46,7 @@ const App = () => (
                 <Route path="/configuracoes" element={<Configuracoes />} />
                 <Route path="/relatorios" element={<Relatorios />} />
                 <Route path="/usuarios" element={<Usuarios />} />
+                <Route path="/profissionais" element={<Profissionais />} />
               </Route>
             </Route>
           </Route>

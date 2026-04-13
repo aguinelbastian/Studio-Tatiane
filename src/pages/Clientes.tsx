@@ -16,13 +16,18 @@ import { Input } from '@/components/ui/input'
 import { Plus, Search, Edit, Trash2 } from 'lucide-react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ModalCliente } from '@/components/clientes/ModalCliente'
+import { ModalAgendarAula } from '@/components/agendamentos/ModalAgendarAula'
+import { CalendarPlus } from 'lucide-react'
 
 export default function Clientes() {
-  const { clientes, loading, refetch } = useClientesData()
+  const { clientes, profissionais, loading, refetch } = useClientesData()
   const { deletarCliente } = useClientesMutacoes(refetch)
   const [busca, setBusca] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
   const [clienteEdicao, setClienteEdicao] = useState<any>(null)
+
+  const [modalAgendarOpen, setModalAgendarOpen] = useState(false)
+  const [clienteSelecionado, setClienteSelecionado] = useState<any>(null)
 
   const clientesFiltrados = clientes.filter(
     (c: any) =>
@@ -45,6 +50,11 @@ export default function Clientes() {
     if (confirm('Tem certeza que deseja cancelar este cliente?')) {
       await deletarCliente(id)
     }
+  }
+
+  const handleAgendar = (cliente: any) => {
+    setClienteSelecionado(cliente)
+    setModalAgendarOpen(true)
   }
 
   return (
@@ -116,10 +126,28 @@ export default function Clientes() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right space-x-1">
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleAgendar(item)}
+                        title="Agendar Aula"
+                      >
+                        <CalendarPlus className="h-4 w-4 text-primary" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleEdit(item)}
+                        title="Editar"
+                      >
                         <Edit className="h-4 w-4" />
                       </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDelete(item.id)}
+                        title="Deletar"
+                      >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -146,6 +174,15 @@ export default function Clientes() {
           setModalOpen(false)
           refetch()
         }}
+      />
+
+      <ModalAgendarAula
+        isOpen={modalAgendarOpen}
+        onClose={() => setModalAgendarOpen(false)}
+        defaultClienteId={clienteSelecionado?.id}
+        clientes={clientes}
+        profissionais={profissionais}
+        onSuccess={() => {}}
       />
     </div>
   )

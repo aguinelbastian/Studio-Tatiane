@@ -9,19 +9,32 @@ const corsHeaders = {
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
-  
+
   try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
     )
 
     const { agendamento_id, status } = await req.json()
 
     // Validação: status deve ser válido
-    if (!['realizado', 'falta_sem_aviso', 'reposicao', 'cancelado', 'agendado', 'trancado'].includes(status)) {
-      return new Response(JSON.stringify({ sucesso: false, erro: 'Status inválido' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    if (
+      ![
+        'realizado',
+        'falta_sem_aviso',
+        'reposicao',
+        'cancelado',
+        'agendado',
+        'trancado',
+        'a_repor',
+      ].includes(status)
+    ) {
+      return new Response(JSON.stringify({ sucesso: false, erro: 'Status inválido' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     // Atualiza status do agendamento
@@ -29,12 +42,15 @@ Deno.serve(async (req: Request) => {
       .from('agendamentos')
       .update({ status })
       .eq('id', agendamento_id)
-    
+
     if (updErr) throw updErr
 
     // Apenas calcula repasse para aulas realizadas ou faltas sem aviso
     if (status !== 'realizado' && status !== 'falta_sem_aviso') {
-      return new Response(JSON.stringify({ sucesso: true, mensagem: `Status atualizado para ${status}` }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ sucesso: true, mensagem: `Status atualizado para ${status}` }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     // Busca dados completos do agendamento
@@ -45,13 +61,19 @@ Deno.serve(async (req: Request) => {
       .single()
 
     if (agErr || !agendamento || !agendamento.profissional) {
-      return new Response(JSON.stringify({ sucesso: true, alerta: 'Profissional não encontrado' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ sucesso: true, alerta: 'Profissional não encontrado' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     // Validação: profissional deve ter comissão
     const percentual = agendamento.profissional.comissao_percentual || 0
     if (percentual <= 0) {
-      return new Response(JSON.stringify({ sucesso: true, alerta: 'Profissional sem comissão configurada' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      return new Response(
+        JSON.stringify({ sucesso: true, alerta: 'Profissional sem comissão configurada' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
     }
 
     // Valor padrão para aula avulsa
@@ -91,7 +113,13 @@ Deno.serve(async (req: Request) => {
     // Calcula valor_bruto baseado no contrato
     if (contrato) {
       if (contrato.status === 'trancado') {
-        return new Response(JSON.stringify({ sucesso: true, alerta: 'Contrato está trancado. Repasse não será gerado.' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+        return new Response(
+          JSON.stringify({
+            sucesso: true,
+            alerta: 'Contrato está trancado. Repasse não será gerado.',
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        )
       }
 
       if (contrato.tipo === 'pacote' && contrato.pacote) {
@@ -107,39 +135,42 @@ Deno.serve(async (req: Request) => {
     }
 
     // Calcula valor do repasse
-    const valor_repasse = Math.round((valor_bruto * percentual) / 100 * 100) / 100 // Arredonda para 2 casas decimais
+    const valor_repasse = Math.round(((valor_bruto * percentual) / 100) * 100) / 100 // Arredonda para 2 casas decimais
 
     // Insere registro de repasse
-    const { error: repErr } = await supabase
-      .from('repasses_profissionais')
-      .insert({
-        profissional_id: agendamento.profissional_id,
-        agendamento_id: agendamento_id,
-        contrato_id: contrato_id,
-        valor_bruto: Math.round(valor_bruto * 100) / 100,
-        percentual,
-        valor_repasse,
-        data_aula: agendamento.data_hora,
-        tipo_repasse: status === 'falta_sem_aviso' ? 'falta_sem_aviso' : 'aula_normal',
-        status_pagamento: 'pendente'
-      })
-    
+    const { error: repErr } = await supabase.from('repasses_profissionais').insert({
+      profissional_id: agendamento.profissional_id,
+      agendamento_id: agendamento_id,
+      contrato_id: contrato_id,
+      valor_bruto: Math.round(valor_bruto * 100) / 100,
+      percentual,
+      valor_repasse,
+      data_aula: agendamento.data_hora,
+      tipo_repasse: status === 'falta_sem_aviso' ? 'falta_sem_aviso' : 'aula_normal',
+      status_pagamento: 'pendente',
+    })
+
     if (repErr) throw repErr
 
-    return new Response(JSON.stringify({ 
-      sucesso: true, 
-      mensagem: `Aula registrada e repasse calculado`,
-      repasse: {
-        profissional: agendamento.profissional.nome,
-        valor_bruto: Math.round(valor_bruto * 100) / 100,
-        percentual: `${percentual}%`,
-        valor_repasse: valor_repasse,
-        tipo_contrato: tipo_contrato
-      }
-    }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
-
+    return new Response(
+      JSON.stringify({
+        sucesso: true,
+        mensagem: `Aula registrada e repasse calculado`,
+        repasse: {
+          profissional: agendamento.profissional.nome,
+          valor_bruto: Math.round(valor_bruto * 100) / 100,
+          percentual: `${percentual}%`,
+          valor_repasse: valor_repasse,
+          tipo_contrato: tipo_contrato,
+        },
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    )
   } catch (error: any) {
     console.error('Erro em calcular-repasse-aula:', error)
-    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), {
+      status: 400,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
   }
 })

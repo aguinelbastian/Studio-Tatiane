@@ -100,11 +100,13 @@ export function ModalContrato({
                 <SelectValue placeholder="Selecione..." />
               </SelectTrigger>
               <SelectContent>
-                {clientes.map((c: any) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome}
-                  </SelectItem>
-                ))}
+                {clientes
+                  .filter((c: any) => c.status === 'ativo')
+                  .map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

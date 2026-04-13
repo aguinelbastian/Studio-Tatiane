@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Edit2 } from 'lucide-react'
+import { Loader2, Edit2, Plus, Trash2 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import ModalUsuario from '@/components/usuarios/ModalUsuario'
 
@@ -49,13 +49,33 @@ export default function Usuarios() {
     setModalOpen(true)
   }
 
+  const handleNew = () => {
+    setSelectedUser(null)
+    setModalOpen(true)
+  }
+
+  const handleDelete = async (user: any) => {
+    if (confirm(`Tem certeza que deseja deletar o usuário ${user.nome}?`)) {
+      const { error } = await supabase.rpc('delete_user', { p_user_id: user.id })
+      if (error) {
+        toast({ title: 'Erro ao deletar', description: error.message, variant: 'destructive' })
+      } else {
+        toast({ title: 'Usuário deletado com sucesso' })
+        fetchUsuarios()
+      }
+    }
+  }
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 animate-fade-in-up">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold tracking-tight">Gestão de Usuários</h2>
           <p className="text-muted-foreground">Gerencie o acesso e permissões do sistema.</p>
         </div>
+        <Button onClick={handleNew}>
+          <Plus className="mr-2 h-4 w-4" /> Novo Usuário
+        </Button>
       </div>
 
       <div className="rounded-md border bg-card shadow-sm overflow-hidden">
@@ -93,9 +113,22 @@ export default function Usuarios() {
                       {u.status}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(u)}>
+                  <TableCell className="text-right space-x-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleEdit(u)}
+                      title="Editar"
+                    >
                       <Edit2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(u)}
+                      title="Deletar"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive transition-colors" />
                     </Button>
                   </TableCell>
                 </TableRow>

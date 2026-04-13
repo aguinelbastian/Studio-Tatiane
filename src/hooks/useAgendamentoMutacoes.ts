@@ -149,7 +149,7 @@ export const useAgendamentoMutacoes = () => {
 
   const marcarStatusAula = async (
     agendamento_id: string,
-    status: 'realizado' | 'falta_sem_aviso',
+    status: 'realizado' | 'falta_sem_aviso' | 'a_repor',
   ) => {
     try {
       const { data, error } = await supabase.functions.invoke('calcular-repasse-aula', {
@@ -208,6 +208,7 @@ export const useAgendamentoMutacoes = () => {
     criarAgendamento,
     cancelarAgendamento,
     marcarReposicao,
+    marcarStatusAula,
     marcarRealizado,
     marcarFaltaSemAviso,
     deletarAgendamento,

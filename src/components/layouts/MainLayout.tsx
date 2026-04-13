@@ -12,6 +12,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
+import { useState } from 'react'
 import useAuthStore from '@/stores/useAuthStore'
 import {
   LayoutDashboard,
@@ -28,11 +29,19 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import ModalPerfil from '@/components/usuarios/ModalPerfil'
 
 export default function MainLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, signOut } = useAuthStore()
+  const [modalPerfilOpen, setModalPerfilOpen] = useState(false)
 
   const handleLogout = async () => {
     await signOut()
@@ -141,20 +150,37 @@ export default function MainLayout() {
             </SidebarGroup>
           </SidebarContent>
           <SidebarFooter className="border-t p-4">
-            <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center">
-              <Avatar className="h-9 w-9 border border-border">
-                <AvatarImage
-                  src={`https://img.usecurling.com/ppl/thumbnail?gender=${user?.role === 'admin' ? 'female' : 'male'}&seed=${user?.id}`}
-                />
-                <AvatarFallback>{user?.nome?.charAt(0) || 'U'}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-medium truncate">{user?.nome || 'Usuário'}</span>
-                <span className="text-xs text-muted-foreground truncate capitalize">
-                  {user?.role || ''}
-                </span>
-              </div>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 group-data-[collapsible=icon]:justify-center cursor-pointer hover:bg-muted p-2 rounded-md transition-colors">
+                  <Avatar className="h-9 w-9 border border-border">
+                    <AvatarImage
+                      src={
+                        user?.avatar_url ||
+                        `https://img.usecurling.com/ppl/thumbnail?gender=${user?.role === 'admin' ? 'female' : 'male'}&seed=${user?.id}`
+                      }
+                    />
+                    <AvatarFallback>{user?.nome?.charAt(0) || 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col gap-0.5 overflow-hidden group-data-[collapsible=icon]:hidden text-left">
+                    <span className="text-sm font-medium truncate">{user?.nome || 'Usuário'}</span>
+                    <span className="text-xs text-muted-foreground truncate capitalize">
+                      {user?.role || ''}
+                    </span>
+                  </div>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="center" className="w-48">
+                <DropdownMenuItem onClick={() => setModalPerfilOpen(true)}>
+                  <UserCog className="mr-2 h-4 w-4" />
+                  Editar Perfil
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </SidebarFooter>
         </Sidebar>
 
@@ -184,6 +210,12 @@ export default function MainLayout() {
           </main>
         </div>
       </div>
+      <ModalPerfil
+        open={modalPerfilOpen}
+        onOpenChange={setModalPerfilOpen}
+        user={user}
+        onSuccess={() => window.location.reload()}
+      />
     </SidebarProvider>
   )
 }

@@ -11,28 +11,55 @@ import {
 } from '@/components/ui/table'
 import { Edit } from 'lucide-react'
 import { ModalHorario } from '@/components/configuracoes/ModalHorario'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 export function AbaHorarios({ horarios, profissionais, refetch }: any) {
   const [modalOpen, setModalOpen] = useState(false)
   const [horarioEdicao, setHorarioEdicao] = useState<any>(null)
+  const [filterProf, setFilterProf] = useState('todos')
 
   const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado']
 
+  const filteredHorarios = horarios.filter(
+    (h: any) => filterProf === 'todos' || h.profissional_id === filterProf,
+  )
+
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <CardTitle>Horários de Funcionamento</CardTitle>
           <CardDescription>Configure os turnos por profissional e dia da semana.</CardDescription>
         </div>
-        <Button
-          onClick={() => {
-            setHorarioEdicao(null)
-            setModalOpen(true)
-          }}
-        >
-          Novo Horário
-        </Button>
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          <Select value={filterProf} onValueChange={setFilterProf}>
+            <SelectTrigger className="w-[200px]">
+              <SelectValue placeholder="Profissional" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os Profissionais</SelectItem>
+              {profissionais?.map((p: any) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.nome}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => {
+              setHorarioEdicao(null)
+              setModalOpen(true)
+            }}
+          >
+            Novo Horário
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Table>
@@ -47,7 +74,7 @@ export function AbaHorarios({ horarios, profissionais, refetch }: any) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {horarios.map((h: any) => (
+            {filteredHorarios.map((h: any) => (
               <TableRow key={h.id}>
                 <TableCell>{diasSemana[h.dia_semana]}</TableCell>
                 <TableCell>{h.profissionais?.nome}</TableCell>

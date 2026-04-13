@@ -55,7 +55,27 @@ export default function Agendamentos() {
   const [isReposicaoOpen, setIsReposicaoOpen] = useState(false)
   const [selectedReposicao, setSelectedReposicao] = useState<any>(null)
 
-  const { deletarAgendamento } = useAgendamentoMutacoes()
+  const { deletarAgendamento, marcarStatusAula, editarAgendamento } = useAgendamentoMutacoes()
+
+  const handleStatusChange = async (id: string, novoStatus: string) => {
+    if (['realizado', 'falta_sem_aviso', 'a_repor'].includes(novoStatus)) {
+      const res = await marcarStatusAula(id, novoStatus as any)
+      if (res.sucesso) {
+        toast.success('Status atualizado com sucesso')
+        fetchData()
+      } else {
+        toast.error(res.erro || 'Erro ao atualizar status')
+      }
+    } else {
+      const res = await editarAgendamento(id, { status: novoStatus })
+      if (res.sucesso) {
+        toast.success('Status atualizado com sucesso')
+        fetchData()
+      } else {
+        toast.error(res.erro || 'Erro ao atualizar status')
+      }
+    }
+  }
 
   const fetchData = async () => {
     setLoading(true)
@@ -248,17 +268,21 @@ export default function Agendamentos() {
                       <TableCell>{ag.profissionais?.nome}</TableCell>
                       <TableCell className="capitalize">{ag.tipo}</TableCell>
                       <TableCell>
-                        <Badge
-                          variant={
-                            ag.status === 'agendado'
-                              ? 'default'
-                              : ag.status === 'cancelado'
-                                ? 'destructive'
-                                : 'secondary'
-                          }
+                        <Select
+                          value={ag.status}
+                          onValueChange={(val) => handleStatusChange(ag.id, val)}
                         >
-                          {ag.status?.replace('_', ' ')}
-                        </Badge>
+                          <SelectTrigger className="w-[140px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="agendado">Agendado</SelectItem>
+                            <SelectItem value="realizado">Realizado</SelectItem>
+                            <SelectItem value="falta_sem_aviso">Falta sem aviso</SelectItem>
+                            <SelectItem value="cancelado">Cancelado</SelectItem>
+                            <SelectItem value="a_repor">A repor</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </TableCell>
                       <TableCell className="text-right space-x-1">
                         <Button

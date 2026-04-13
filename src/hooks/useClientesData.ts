@@ -8,6 +8,7 @@ export const useClientesData = () => {
   const [pacotes, setPacotes] = useState<any[]>([])
   const [horarios, setHorarios] = useState<any[]>([])
   const [periodos, setPeriodos] = useState<any[]>([])
+  const [profissionais, setProfissionais] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -23,6 +24,7 @@ export const useClientesData = () => {
         { data: pacotesData, error: pacotesError },
         { data: horariosData, error: horariosError },
         { data: periodosData, error: periodosError },
+        { data: profsData, error: profsError },
       ] = await Promise.all([
         supabase
           .from('clientes')
@@ -50,7 +52,7 @@ export const useClientesData = () => {
           .limit(100),
         supabase
           .from('horarios_funcionamento')
-          .select('*')
+          .select('*, profissionais(nome)')
           .eq('ativo', true)
           .order('dia_semana', { ascending: true })
           .limit(100),
@@ -60,6 +62,11 @@ export const useClientesData = () => {
           .gte('data_fim', new Date().toISOString().split('T')[0])
           .order('data_inicio', { ascending: true })
           .limit(100),
+        supabase
+          .from('profissionais')
+          .select('*')
+          .eq('status', 'ativo')
+          .order('nome', { ascending: true }),
       ])
 
       if (clientesError) throw clientesError
@@ -68,6 +75,7 @@ export const useClientesData = () => {
       if (pacotesError) throw pacotesError
       if (horariosError) throw horariosError
       if (periodosError) throw periodosError
+      if (profsError) throw profsError
 
       setClientes(clientesData || [])
       setContratos(contratosData || [])
@@ -75,6 +83,7 @@ export const useClientesData = () => {
       setPacotes(pacotesData || [])
       setHorarios(horariosData || [])
       setPeriodos(periodosData || [])
+      setProfissionais(profsData || [])
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar dados')
       console.error('Erro em useClientesData:', err)
@@ -99,6 +108,7 @@ export const useClientesData = () => {
     pacotes,
     horarios,
     periodos,
+    profissionais,
     loading,
     error,
     refetch: fetchData,

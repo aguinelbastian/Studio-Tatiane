@@ -20,10 +20,13 @@ import {
 import { Switch } from '@/components/ui/switch'
 import { useToast } from '@/hooks/use-toast'
 import { supabase } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Upload } from 'lucide-react'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 
 export default function ModalUsuario({ open, onOpenChange, usuario, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
+  const [foto, setFoto] = useState<File | null>(null)
+  const [fotoUrl, setFotoUrl] = useState<string>('')
   const { register, handleSubmit, reset, setValue, watch } = useForm()
   const { toast } = useToast()
   const ativo = watch('status') === 'ativo'
@@ -32,33 +35,74 @@ export default function ModalUsuario({ open, onOpenChange, usuario, onSuccess }:
     if (usuario) {
       reset({
         nome: usuario.nome,
+        email: usuario.email,
         role: usuario.role,
         status: usuario.status,
       })
+      setFotoUrl(usuario.avatar_url || '')
     } else {
       reset({
         nome: '',
+        email: '',
+        senha: '',
         role: 'professor',
         status: 'ativo',
       })
+      setFotoUrl('')
     }
+    setFoto(null)
   }, [usuario, reset, open])
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFoto(e.target.files[0])
+      setFotoUrl(URL.createObjectURL(e.target.files[0]))
+    }
+  }
 
   const onSubmit = async (data: any) => {
     setLoading(true)
     try {
-      const { error } = await supabase
-        .from('usuarios')
-        .update({
-          nome: data.nome,
-          role: data.role,
-          status: data.status,
+      let avatarUrl = usuario?.avatar_url || null
+
+      if (foto) {
+        const fileExt = foto.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const { data: uploadData, error: uploadErr } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, foto)
+
+        if (uploadErr) throw uploadErr
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('avatars').getPublicUrl(uploadData.path)
+        avatarUrl = publicUrl
+      }
+
+      if (!usuario) {
+        const { error } = await supabase.rpc('create_new_user', {
+          p_email: data.email,
+          p_password: data.senha,
+          p_nome: data.nome,
+          p_role: data.role,
+          p_avatar_url: avatarUrl,
         })
-        .eq('id', usuario.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('usuarios')
+          .update({
+            nome: data.nome,
+            role: data.role,
+            status: data.status,
+            avatar_url: avatarUrl,
+          })
+          .eq('id', usuario.id)
+        if (error) throw error
+      }
 
-      if (error) throw error
-
-      toast({ title: 'Usuário atualizado com sucesso!' })
+      toast({ title: usuario ? 'Usuário atualizado com sucesso!' : 'Usuário criado com sucesso!' })
       onSuccess()
       onOpenChange(false)
     } catch (error: any) {
@@ -76,13 +120,58 @@ export default function ModalUsuario({ open, onOpenChange, usuario, onSuccess }:
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Editar Usuário</DialogTitle>
+          <DialogTitle>{usuario ? 'Editar Usuário' : 'Novo Usuário'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <Label>Nome</Label>
-            <Input {...register('nome', { required: true })} placeholder="Nome do usuário" />
+          <div className="flex flex-col items-center justify-center space-y-2 mb-4">
+            <Avatar className="h-20 w-20">
+              <AvatarImage src={fotoUrl} />
+              <AvatarFallback>{watch('nome')?.charAt(0) || 'U'}</AvatarFallback>
+            </Avatar>
+            <div>
+              <input
+                type="file"
+                id="foto-upload"
+                className="hidden"
+                accept="image/*"
+                onChange={handleFotoChange}
+              />
+              <Label
+                htmlFor="foto-upload"
+                className="cursor-pointer text-sm text-primary flex items-center hover:underline"
+              >
+                <Upload className="mr-2 h-4 w-4" />
+                Alterar Foto
+              </Label>
+            </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input {...register('nome', { required: true })} placeholder="Nome completo" />
+            </div>
+            <div className="space-y-2">
+              <Label>E-mail</Label>
+              <Input
+                {...register('email', { required: true })}
+                type="email"
+                placeholder="E-mail"
+                disabled={!!usuario}
+              />
+            </div>
+          </div>
+
+          {!usuario && (
+            <div className="space-y-2">
+              <Label>Senha</Label>
+              <Input
+                {...register('senha', { required: !usuario })}
+                type="password"
+                placeholder="Senha"
+              />
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label>Perfil (Role)</Label>

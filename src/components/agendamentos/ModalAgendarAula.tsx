@@ -29,6 +29,7 @@ export function ModalAgendarAula({
   clientes,
   profissionais,
   onSuccess,
+  defaultClienteId,
 }: any) {
   const [clienteId, setClienteId] = useState('')
   const [profId, setProfId] = useState('')
@@ -40,6 +41,7 @@ export function ModalAgendarAula({
 
   const { podeAgendar } = useAgendamentoValidacoes()
   const { criarAgendamento, editarAgendamento } = useAgendamentoMutacoes()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
     if (isOpen) {
@@ -57,7 +59,7 @@ export function ModalAgendarAula({
         setClienteId('')
         setTipo('aula')
       } else {
-        setClienteId('')
+        setClienteId(defaultClienteId || '')
         setProfId('')
         setDataHora('')
         setTipo('aula')
@@ -94,6 +96,7 @@ export function ModalAgendarAula({
   }
 
   const handleConfirmar = async () => {
+    setIsSubmitting(true)
     const isoString = new Date(dataHora).toISOString()
 
     if (agendamentoEdicao) {
@@ -121,6 +124,7 @@ export function ModalAgendarAula({
         toast.error(res.erro || 'Erro ao agendar')
       }
     }
+    setIsSubmitting(false)
   }
 
   return (
@@ -156,11 +160,13 @@ export function ModalAgendarAula({
                 <SelectValue placeholder="Selecione o cliente" />
               </SelectTrigger>
               <SelectContent>
-                {clientes.map((c: any) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.nome}
-                  </SelectItem>
-                ))}
+                {clientes
+                  .filter((c: any) => c.status === 'ativo')
+                  .map((c: any) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.nome}
+                    </SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -221,8 +227,12 @@ export function ModalAgendarAula({
               {validando ? 'Validando...' : 'Validar Disponibilidade'}
             </Button>
           ) : (
-            <Button onClick={handleConfirmar} className="bg-primary text-primary-foreground">
-              Confirmar
+            <Button
+              onClick={handleConfirmar}
+              disabled={isSubmitting}
+              className="bg-primary text-primary-foreground"
+            >
+              {isSubmitting ? 'Salvando...' : 'Confirmar'}
             </Button>
           )}
         </DialogFooter>

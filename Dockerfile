@@ -1,13 +1,30 @@
-FROM n8nio/n8n:latest
+FROM node:22-alpine
 
-ENV N8N_HOST=0.0.0.0
-ENV N8N_PORT=5678
-ENV N8N_PROTOCOL=http
-ENV NODE_ENV=production
-ENV DB_TYPE=postgresdb
-ENV EXECUTIONS_MODE=queue
-ENV QUEUE_TYPE=redis
+# Instalar dependências do sistema
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    cairo-dev \
+    jpeg-dev \
+    pango-dev \
+    giflib-dev
 
+# Definir diretório de trabalho
+WORKDIR /home/node/.n8n
+
+# Instalar n8n globalmente
+RUN npm install -g n8n
+
+# Criar diretório de dados
+RUN mkdir -p /home/node/.n8n && \
+    chown -R node:node /home/node
+
+# Trocar para usuário node (segurança)
+USER node
+
+# Expor porta
 EXPOSE 5678
 
+# Comando de inicialização
 CMD ["n8n", "start"]

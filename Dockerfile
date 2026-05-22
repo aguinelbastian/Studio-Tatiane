@@ -14,7 +14,7 @@ RUN apk add --no-cache \
 WORKDIR /home/node/.n8n
 
 # Instalar n8n globalmente
-RUN npm install -g n8n
+RUN npm install -g n8n@2.21.6
 
 # Criar diretório de dados
 RUN mkdir -p /home/node/.n8n && \

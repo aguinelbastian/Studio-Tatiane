@@ -7,8 +7,9 @@
   "scripts": {
     "start": "vite dev",
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc -p tsconfig.app.json --noEmit && vite build",
     "build:dev": "vite build --mode development",
+    "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "lint": "oxlint src",
     "lint:fix": "oxlint src --fix",
     "format": "oxfmt",

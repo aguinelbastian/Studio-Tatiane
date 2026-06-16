@@ -4,7 +4,7 @@ import { useToast } from '@/hooks/use-toast'
 export function useClientesMutacoes(onSuccess?: () => void) {
   const { toast } = useToast()
 
-  const handleAction = async (promise: Promise<any>, successMsg: string) => {
+  const handleAction = async (promise: PromiseLike<any>, successMsg: string) => {
     try {
       const { error } = await promise
       if (error) throw error

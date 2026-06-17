@@ -38,3 +38,6 @@ screenshot.png
 # Local tooling (Claude Code / Superpowers)
 .claude/
 .superpowers/
+
+# Credencial local de conexão com o banco (NUNCA commitar)
+.dburl

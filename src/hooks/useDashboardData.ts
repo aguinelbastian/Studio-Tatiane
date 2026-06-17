@@ -6,6 +6,7 @@ export interface DashboardData {
   kpis: {
     clientesAtivos: number
     receitaMes: number
+    recebidoMes: number
     taxaOcupacaoGeral: number
     aulasRealizadas: number
   }
@@ -53,6 +54,16 @@ export function useDashboardData() {
         .lte('data_inicio', endStr)
       const receitaMes =
         contratosMes?.reduce((acc, curr) => acc + Number(curr.preco_pago || 0), 0) || 0
+
+      // 2b. Recebido no Mês (caixa — pagamentos confirmados no mês)
+      const { data: pagamentosMes } = await supabase
+        .from('pagamentos')
+        .select('valor')
+        .eq('status', 'confirmado')
+        .gte('data_pagamento', startStr)
+        .lte('data_pagamento', endStr)
+      const recebidoMes =
+        pagamentosMes?.reduce((acc, curr) => acc + Number(curr.valor || 0), 0) || 0
 
       // 3. Taxa de Ocupação Geral
       const { data: ocupacaoGeralData } = await supabase
@@ -125,6 +136,7 @@ export function useDashboardData() {
         kpis: {
           clientesAtivos: clientesAtivos || 0,
           receitaMes,
+          recebidoMes,
           taxaOcupacaoGeral,
           aulasRealizadas: aulasRealizadas || 0,
         },

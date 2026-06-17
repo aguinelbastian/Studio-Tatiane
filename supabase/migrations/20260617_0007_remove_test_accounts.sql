@@ -7,19 +7,20 @@ set usuario_id = (select id from public.usuarios where email = 'studiopilatestat
 where usuario_id in (select id from public.usuarios where email = 'tatiane@studio.com');
 
 -- Desvincula profissionais ainda sem conta real (evita violar a FK ao deletar os usuarios de teste).
+-- NOTA: aguinel@gmail.com NÃO entra aqui — é admin permanente (ver migration 0009).
 update public.profissionais
 set usuario_id = null
 where usuario_id in (
   select id from public.usuarios
-  where email in ('renata@studio.com','miriam@studio.com','aguinel@studio.com','aguinel@gmail.com','admin@studio.com')
+  where email in ('renata@studio.com','miriam@studio.com','aguinel@studio.com','admin@studio.com')
 );
 
 -- Remove perfis de teste em public.usuarios.
 delete from public.usuarios
 where email in ('tatiane@studio.com','renata@studio.com','miriam@studio.com',
-                'aguinel@studio.com','aguinel@gmail.com','admin@studio.com');
+                'aguinel@studio.com','admin@studio.com');
 
 -- Remove contas de auth de teste.
 delete from auth.users
 where email in ('tatiane@studio.com','renata@studio.com','miriam@studio.com',
-                'aguinel@studio.com','aguinel@gmail.com','admin@studio.com');
+                'aguinel@studio.com','admin@studio.com');

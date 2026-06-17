@@ -128,15 +128,6 @@ export default function Login() {
                 className="transition-all focus-visible:ring-primary"
               />
             </div>
-
-            <div className="bg-muted/50 p-3 rounded-md text-xs text-muted-foreground mt-4">
-              <p className="font-medium mb-1">Credenciais de Teste (Senha: senha123):</p>
-              <p>Admin: admin@studio.com</p>
-              <p>Tatiane: tatiane@studio.com</p>
-              <p>Renata: renata@studio.com</p>
-              <p>Miriam: miriam@studio.com</p>
-              <p>Aguinel: aguinel@studio.com</p>
-            </div>
           </CardContent>
 
           <CardFooter>

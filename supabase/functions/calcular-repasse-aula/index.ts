@@ -7,11 +7,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   try {
-    const supabase = createClient(
+    // Client com o JWT do usuário — usado apenas para identificar/autorizar o chamador.
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
@@ -31,14 +38,46 @@ Deno.serve(async (req: Request) => {
         'a_repor',
       ].includes(status)
     ) {
-      return new Response(JSON.stringify({ sucesso: false, erro: 'Status inválido' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ sucesso: false, erro: 'Status inválido' }, 400)
     }
 
+    // --- Autorização: admin OU profissional dono do agendamento ---
+    const { data: auth } = await userClient.auth.getUser()
+    const callerEmail = auth?.user?.email
+    if (!callerEmail) return json({ sucesso: false, erro: 'Não autenticado' }, 401)
+
+    const { data: perfil } = await userClient
+      .from('usuarios')
+      .select('id, role')
+      .eq('email', callerEmail)
+      .single()
+    const isAdmin = perfil?.role === 'admin' || perfil?.role === 'superuser'
+
+    const { data: agOwner } = await userClient
+      .from('agendamentos')
+      .select('profissional_id')
+      .eq('id', agendamento_id)
+      .single()
+
+    const { data: callerProf } = await userClient
+      .from('profissionais')
+      .select('id')
+      .eq('usuario_id', perfil?.id)
+      .maybeSingle()
+
+    const isOwner = !!agOwner && !!callerProf && agOwner.profissional_id === callerProf.id
+    if (!isAdmin && !isOwner) {
+      return json({ sucesso: false, erro: 'Sem permissão para este agendamento' }, 403)
+    }
+
+    // Client com service role — usado para as escritas/leituras privilegiadas após autorizar.
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+    )
+
     // Atualiza status do agendamento
-    const { error: updErr } = await supabase
+    const { error: updErr } = await admin
       .from('agendamentos')
       .update({ status })
       .eq('id', agendamento_id)
@@ -47,33 +86,24 @@ Deno.serve(async (req: Request) => {
 
     // Apenas calcula repasse para aulas realizadas ou faltas sem aviso
     if (status !== 'realizado' && status !== 'falta_sem_aviso') {
-      return new Response(
-        JSON.stringify({ sucesso: true, mensagem: `Status atualizado para ${status}` }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({ sucesso: true, mensagem: `Status atualizado para ${status}` })
     }
 
     // Busca dados completos do agendamento
-    const { data: agendamento, error: agErr } = await supabase
+    const { data: agendamento, error: agErr } = await admin
       .from('agendamentos')
       .select('*, profissional:profissionais(*), cliente:clientes(*)')
       .eq('id', agendamento_id)
       .single()
 
     if (agErr || !agendamento || !agendamento.profissional) {
-      return new Response(
-        JSON.stringify({ sucesso: true, alerta: 'Profissional não encontrado' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({ sucesso: true, alerta: 'Profissional não encontrado' })
     }
 
     // Validação: profissional deve ter comissão
     const percentual = agendamento.profissional.comissao_percentual || 0
     if (percentual <= 0) {
-      return new Response(
-        JSON.stringify({ sucesso: true, alerta: 'Profissional sem comissão configurada' }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      )
+      return json({ sucesso: true, alerta: 'Profissional sem comissão configurada' })
     }
 
     // Valor padrão para aula avulsa
@@ -82,7 +112,7 @@ Deno.serve(async (req: Request) => {
     let contrato_id = null
 
     // Busca consumo de pacote (se houver)
-    const { data: consumo } = await supabase
+    const { data: consumo } = await admin
       .from('consumo_pacote')
       .select('contrato_id, contrato:contratos_cliente(*, plano:planos(*), pacote:pacotes(*))')
       .eq('agendamento_id', agendamento_id)
@@ -94,7 +124,7 @@ Deno.serve(async (req: Request) => {
     // Se não encontrou via consumo_pacote, busca contrato ativo vigente
     if (!contrato) {
       const data_aula = new Date(agendamento.data_hora)
-      const { data: contratos } = await supabase
+      const { data: contratos } = await admin
         .from('contratos_cliente')
         .select('*, plano:planos(*), pacote:pacotes(*)')
         .eq('cliente_id', agendamento.cliente_id)
@@ -113,13 +143,7 @@ Deno.serve(async (req: Request) => {
     // Calcula valor_bruto baseado no contrato
     if (contrato) {
       if (contrato.status === 'trancado') {
-        return new Response(
-          JSON.stringify({
-            sucesso: true,
-            alerta: 'Contrato está trancado. Repasse não será gerado.',
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: true, alerta: 'Contrato está trancado. Repasse não será gerado.' })
       }
 
       if (contrato.tipo === 'pacote' && contrato.pacote) {
@@ -138,7 +162,7 @@ Deno.serve(async (req: Request) => {
     const valor_repasse = Math.round(((valor_bruto * percentual) / 100) * 100) / 100 // Arredonda para 2 casas decimais
 
     // Insere registro de repasse
-    const { error: repErr } = await supabase.from('repasses_profissionais').insert({
+    const { error: repErr } = await admin.from('repasses_profissionais').insert({
       profissional_id: agendamento.profissional_id,
       agendamento_id: agendamento_id,
       contrato_id: contrato_id,
@@ -152,25 +176,19 @@ Deno.serve(async (req: Request) => {
 
     if (repErr) throw repErr
 
-    return new Response(
-      JSON.stringify({
-        sucesso: true,
-        mensagem: `Aula registrada e repasse calculado`,
-        repasse: {
-          profissional: agendamento.profissional.nome,
-          valor_bruto: Math.round(valor_bruto * 100) / 100,
-          percentual: `${percentual}%`,
-          valor_repasse: valor_repasse,
-          tipo_contrato: tipo_contrato,
-        },
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-    )
+    return json({
+      sucesso: true,
+      mensagem: `Aula registrada e repasse calculado`,
+      repasse: {
+        profissional: agendamento.profissional.nome,
+        valor_bruto: Math.round(valor_bruto * 100) / 100,
+        percentual: `${percentual}%`,
+        valor_repasse: valor_repasse,
+        tipo_contrato: tipo_contrato,
+      },
+    })
   } catch (error: any) {
     console.error('Erro em calcular-repasse-aula:', error)
-    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ sucesso: false, erro: error.message }, 400)
   }
 })

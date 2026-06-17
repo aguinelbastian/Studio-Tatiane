@@ -7,16 +7,30 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  })
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const supabase = createClient(
+    // Client com o JWT do usuário — usado apenas para identificar/autorizar o chamador.
+    const userClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       { global: { headers: { Authorization: req.headers.get('Authorization')! } } },
+    )
+
+    // Client com service role — usado para validações/escritas após autorizar
+    // (algumas tabelas são admin-only sob RLS: horarios_funcionamento, periodos_fechamento, pacotes).
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
     )
 
     const body = await req.json()
@@ -31,12 +45,49 @@ Deno.serve(async (req: Request) => {
       reposicao_id,
     } = body
 
+    // --- Identidade do chamador ---
+    const { data: auth } = await userClient.auth.getUser()
+    const callerEmail = auth?.user?.email
+    if (!callerEmail) return json({ sucesso: false, erro: 'Não autenticado' }, 401)
+
+    const { data: perfil } = await userClient
+      .from('usuarios')
+      .select('id, role')
+      .eq('email', callerEmail)
+      .single()
+    const isAdmin = perfil?.role === 'admin' || perfil?.role === 'superuser'
+
+    const { data: callerProf } = await userClient
+      .from('profissionais')
+      .select('id')
+      .eq('usuario_id', perfil?.id)
+      .maybeSingle()
+    const callerProfId = callerProf?.id ?? null
+
+    // Autoriza o chamador para um profissional-alvo (admin OU dono).
+    const authorizeFor = (alvoProfissionalId: string | null | undefined) =>
+      isAdmin || (!!alvoProfissionalId && alvoProfissionalId === callerProfId)
+
+    // Resolve o profissional-alvo de uma ação sobre agendamento existente.
+    const profissionalDoAgendamento = async (agId: string) => {
+      const { data } = await admin
+        .from('agendamentos')
+        .select('profissional_id')
+        .eq('id', agId)
+        .single()
+      return data?.profissional_id ?? null
+    }
+
     // ============================================
     // AÇÃO 1: CRIAR AGENDAMENTO
     // ============================================
     if (acao === 'criar') {
+      if (!authorizeFor(profissional_id)) {
+        return json({ sucesso: false, erro: 'Sem permissão para agendar por este profissional' }, 403)
+      }
+
       // Validação 1: Contrato Ativo
-      const { data: contrato, error: erroContrato } = await supabase
+      const { data: contrato, error: erroContrato } = await admin
         .from('contratos_cliente')
         .select('*')
         .eq('cliente_id', cliente_id)
@@ -45,17 +96,14 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (erroContrato || !contrato) {
-        return new Response(
-          JSON.stringify({ sucesso: false, erro: 'Cliente não possui contrato ativo' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: false, erro: 'Cliente não possui contrato ativo' }, 400)
       }
 
       // Validação 2: Horário Disponível
       const dataHora = new Date(data_hora)
       const diaSemana = dataHora.getDay()
 
-      const { data: horario, error: erroHorario } = await supabase
+      const { data: horario, error: erroHorario } = await admin
         .from('horarios_funcionamento')
         .select('*')
         .eq('profissional_id', profissional_id)
@@ -64,15 +112,12 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (erroHorario || !horario) {
-        return new Response(
-          JSON.stringify({ sucesso: false, erro: 'Profissional não trabalha neste horário' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: false, erro: 'Profissional não trabalha neste horário' }, 400)
       }
 
       // Validação 3: Studio Aberto (Sem Fechamento)
       const dataFormatada = data_hora.split('T')[0]
-      const { data: fechamento } = await supabase
+      const { data: fechamento } = await admin
         .from('periodos_fechamento')
         .select('*')
         .or(`profissional_id.is.null,profissional_id.eq.${profissional_id}`)
@@ -81,61 +126,48 @@ Deno.serve(async (req: Request) => {
         .single()
 
       if (fechamento) {
-        return new Response(
-          JSON.stringify({
-            sucesso: false,
-            erro: `Studio fechado neste período (${fechamento.motivo})`,
-          }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        return json(
+          { sucesso: false, erro: `Studio fechado neste período (${fechamento.motivo})` },
+          400,
         )
       }
 
       // Validação 4: Sala Não Ocupada (Pilates Only)
-      const { data: profissional } = await supabase
+      const { data: profissional } = await admin
         .from('profissionais')
         .select('tipo')
         .eq('id', profissional_id)
         .single()
 
       if (profissional?.tipo === 'pilates') {
-        const { data: tatiane } = await supabase
+        // Profissionais de pilates concorrem pela mesma sala (sem hardcode de nomes).
+        const { data: pilatesProfs } = await admin
           .from('profissionais')
           .select('id')
-          .eq('nome', 'Tatiane Kafka Ghizoni')
-          .single()
+          .eq('tipo', 'pilates')
 
-        const { data: renata } = await supabase
-          .from('profissionais')
-          .select('id')
-          .eq('nome', 'Renata Tomazetti')
-          .single()
+        const pilatesIds = (pilatesProfs ?? []).map((p: any) => p.id)
 
-        const { data: ocupacao } = await supabase
+        const { data: ocupacao } = await admin
           .from('agendamentos')
-          .select('*')
-          .in('profissional_id', [tatiane?.id, renata?.id].filter(Boolean))
+          .select('id')
+          .in('profissional_id', pilatesIds.length ? pilatesIds : [profissional_id])
           .eq('data_hora', data_hora)
           .in('status', ['agendado', 'realizado'])
 
         if (ocupacao && ocupacao.length > 0) {
-          return new Response(
-            JSON.stringify({
-              sucesso: false,
-              erro: 'Sala de Pilates já está ocupada neste horário',
-            }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          )
+          return json({ sucesso: false, erro: 'Sala de Pilates já está ocupada neste horário' }, 400)
         }
       }
 
       // Validação 5: Pacote com Sessões Disponíveis
       if (contrato.tipo === 'pacote') {
-        const { data: consumo } = await supabase
+        const { data: consumo } = await admin
           .from('consumo_pacote')
           .select('sessoes_consumidas')
           .eq('contrato_id', contrato.id)
 
-        const { data: pacote } = await supabase
+        const { data: pacote } = await admin
           .from('pacotes')
           .select('quantidade_sessoes')
           .eq('id', contrato.pacote_id)
@@ -144,15 +176,12 @@ Deno.serve(async (req: Request) => {
         const totalConsumido =
           consumo?.reduce((sum: number, c: any) => sum + c.sessoes_consumidas, 0) || 0
         if (totalConsumido >= (pacote?.quantidade_sessoes || 0)) {
-          return new Response(
-            JSON.stringify({ sucesso: false, erro: 'Pacote sem sessões disponíveis' }),
-            { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-          )
+          return json({ sucesso: false, erro: 'Pacote sem sessões disponíveis' }, 400)
         }
       }
 
       // Criar Agendamento
-      const { data, error } = await supabase
+      const { data, error } = await admin
         .from('agendamentos')
         .insert({
           cliente_id,
@@ -168,23 +197,25 @@ Deno.serve(async (req: Request) => {
 
       // Consumir Sessão (se Pacote)
       if (contrato.tipo === 'pacote') {
-        await supabase.from('consumo_pacote').insert({
+        await admin.from('consumo_pacote').insert({
           contrato_id: contrato.id,
           agendamento_id: data.id,
           sessoes_consumidas: 1,
         })
       }
 
-      return new Response(JSON.stringify({ sucesso: true, agendamento_id: data.id }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ sucesso: true, agendamento_id: data.id })
     }
 
     // ============================================
     // AÇÃO 2: CANCELAR AGENDAMENTO + CRIAR REPOSIÇÃO
     // ============================================
     if (acao === 'cancelar') {
-      const { data: agendamento, error: getErr } = await supabase
+      if (!authorizeFor(await profissionalDoAgendamento(agendamento_id))) {
+        return json({ sucesso: false, erro: 'Sem permissão para este agendamento' }, 403)
+      }
+
+      const { data: agendamento, error: getErr } = await admin
         .from('agendamentos')
         .select('*')
         .eq('id', agendamento_id)
@@ -198,14 +229,11 @@ Deno.serve(async (req: Request) => {
       const horasRestantes = (dataAula - agora) / (1000 * 60 * 60)
 
       if (horasRestantes < 6) {
-        return new Response(
-          JSON.stringify({ sucesso: false, erro: 'Cancelamento requer 6 horas de antecedência' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: false, erro: 'Cancelamento requer 6 horas de antecedência' }, 400)
       }
 
       // Marcar como cancelado
-      const { error: updErr } = await supabase
+      const { error: updErr } = await admin
         .from('agendamentos')
         .update({ status: 'cancelado' })
         .eq('id', agendamento_id)
@@ -216,7 +244,7 @@ Deno.serve(async (req: Request) => {
       const dataLimite = new Date()
       dataLimite.setDate(dataLimite.getDate() + 30)
 
-      await supabase.from('reposicoes').insert({
+      await admin.from('reposicoes').insert({
         agendamento_original_id: agendamento.id,
         cliente_id: agendamento.cliente_id,
         profissional_id: agendamento.profissional_id,
@@ -224,34 +252,30 @@ Deno.serve(async (req: Request) => {
         status: 'pendente',
       })
 
-      return new Response(JSON.stringify({ sucesso: true, com_reposicao: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ sucesso: true, com_reposicao: true })
     }
 
     // ============================================
     // AÇÃO 3: MARCAR REPOSIÇÃO
     // ============================================
     if (acao === 'marcar_reposicao') {
-      const { data: reposicao, error: getRepErr } = await supabase
+      if (!authorizeFor(profissional_id)) {
+        return json({ sucesso: false, erro: 'Sem permissão para este profissional' }, 403)
+      }
+
+      const { data: reposicao, error: getRepErr } = await admin
         .from('reposicoes')
         .select('*')
         .eq('id', reposicao_id)
         .single()
 
       if (getRepErr || !reposicao) {
-        return new Response(
-          JSON.stringify({ sucesso: false, erro: 'Reposição não encontrada ou expirada' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: false, erro: 'Reposição não encontrada ou expirada' }, 400)
       }
 
       // Validar se reposição ainda é válida
       if (new Date(reposicao.data_limite) < new Date()) {
-        return new Response(JSON.stringify({ sucesso: false, erro: 'Reposição expirou' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        })
+        return json({ sucesso: false, erro: 'Reposição expirou' }, 400)
       }
 
       // Validar 6h de antecedência
@@ -260,14 +284,11 @@ Deno.serve(async (req: Request) => {
       const horasRestantes = (dataAula - agora) / (1000 * 60 * 60)
 
       if (horasRestantes < 6) {
-        return new Response(
-          JSON.stringify({ sucesso: false, erro: 'Reposição requer 6 horas de antecedência' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-        )
+        return json({ sucesso: false, erro: 'Reposição requer 6 horas de antecedência' }, 400)
       }
 
       // Criar novo agendamento (reposição)
-      const { data: novoAgendamento, error: insErr } = await supabase
+      const { data: novoAgendamento, error: insErr } = await admin
         .from('agendamentos')
         .insert({
           cliente_id: reposicao.cliente_id,
@@ -282,7 +303,7 @@ Deno.serve(async (req: Request) => {
       if (insErr) throw insErr
 
       // Marcar reposição como marcada
-      await supabase
+      await admin
         .from('reposicoes')
         .update({
           status: 'marcada',
@@ -291,35 +312,29 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', reposicao_id)
 
-      return new Response(JSON.stringify({ sucesso: true, agendamento_id: novoAgendamento.id }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ sucesso: true, agendamento_id: novoAgendamento.id })
     }
 
     // ============================================
     // AÇÃO 4: MARCAR COMO REALIZADO
     // ============================================
     if (acao === 'marcar_realizado') {
-      const { error: updErr } = await supabase
+      if (!authorizeFor(await profissionalDoAgendamento(agendamento_id))) {
+        return json({ sucesso: false, erro: 'Sem permissão para este agendamento' }, 403)
+      }
+
+      const { error: updErr } = await admin
         .from('agendamentos')
         .update({ status: 'realizado' })
         .eq('id', agendamento_id)
 
       if (updErr) throw updErr
 
-      return new Response(JSON.stringify({ sucesso: true }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      })
+      return json({ sucesso: true })
     }
 
-    return new Response(JSON.stringify({ sucesso: false, erro: 'Ação inválida' }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ sucesso: false, erro: 'Ação inválida' }, 400)
   } catch (error: any) {
-    return new Response(JSON.stringify({ sucesso: false, erro: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    return json({ sucesso: false, erro: error.message }, 400)
   }
 })

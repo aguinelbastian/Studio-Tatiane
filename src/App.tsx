@@ -20,7 +20,7 @@ import NotFound from './pages/NotFound'
 import MainLayout from './components/layouts/MainLayout'
 
 const App = () => (
-  <BrowserRouter future={{ v7_startTransition: false, v7_relativeSplatPath: false }}>
+  <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, '')}>
     <AuthProvider>
       <TooltipProvider>
         <Toaster />

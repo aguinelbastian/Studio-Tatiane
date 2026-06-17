@@ -1,7 +1,13 @@
 import { supabase } from '@/lib/supabase/client'
 
+type ResultadoValidacao = { valido: boolean; contrato?: any; erro?: string }
+
 export const useAgendamentoValidacoes = () => {
-  const podeAgendar = async (cliente_id: string, profissional_id: string, data_hora: string) => {
+  const podeAgendar = async (
+    cliente_id: string,
+    profissional_id: string,
+    data_hora: string,
+  ): Promise<ResultadoValidacao> => {
     try {
       const dataHoraObj = new Date(data_hora)
 
@@ -97,7 +103,7 @@ export const useAgendamentoValidacoes = () => {
     reposicao_id: string,
     profissional_id: string,
     data_hora: string,
-  ) => {
+  ): Promise<ResultadoValidacao> => {
     try {
       const { data: reposicao } = await supabase
         .from('reposicoes')

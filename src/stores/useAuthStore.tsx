@@ -7,6 +7,7 @@ export interface CustomUser {
   email: string
   nome: string
   role: string
+  avatar_url?: string | null
 }
 
 interface AuthContextType {
@@ -74,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: data.email,
               nome: data.nome,
               role: data.role,
+              avatar_url: data.avatar_url,
             })
           } else {
             setUser({

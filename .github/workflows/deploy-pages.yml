@@ -1,0 +1,58 @@
+name: Deploy frontend to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Permissões mínimas necessárias para publicar no Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Evita deploys concorrentes; cancela um build em andamento se chegar outro
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build
+        # Valores públicos do Supabase (a anon key é embarcada no bundle do
+        # cliente de qualquer forma). Se algum dia trocar de projeto Supabase,
+        # ajuste aqui ou mova para "Settings > Secrets and variables > Actions".
+        env:
+          VITE_SUPABASE_URL: https://hnyjvjflpoierndarupx.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhueWp2amZscG9pZXJuZGFydXB4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5MjkwMDgsImV4cCI6MjA5MTUwNTAwOH0.mo4ZGxastY7aOZ8B0B5fPObqSfX7PUXulGk-1FEXGj8
+        run: npm run build
+
+      # Fallback de SPA: o Pages serve 404.html em rotas desconhecidas;
+      # como é uma cópia do index, o React Router assume a rota no cliente.
+      - name: SPA fallback
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

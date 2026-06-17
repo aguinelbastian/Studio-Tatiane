@@ -875,6 +875,7 @@ export type Database = {
       }
       usuarios: {
         Row: {
+          avatar_url: string | null
           data_criacao: string | null
           email: string
           id: string
@@ -883,6 +884,7 @@ export type Database = {
           status: string | null
         }
         Insert: {
+          avatar_url?: string | null
           data_criacao?: string | null
           email: string
           id?: string
@@ -891,6 +893,7 @@ export type Database = {
           status?: string | null
         }
         Update: {
+          avatar_url?: string | null
           data_criacao?: string | null
           email?: string
           id?: string
@@ -947,7 +950,22 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      create_new_user: {
+        Args: {
+          p_email: string
+          p_password: string
+          p_nome: string
+          p_role: string
+          p_avatar_url?: string | null
+        }
+        Returns: undefined
+      }
+      delete_user: {
+        Args: {
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

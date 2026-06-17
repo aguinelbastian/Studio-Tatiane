@@ -53,7 +53,7 @@ export default function Dashboard() {
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Olá, {user?.name?.split(' ')[0]}</h2>
+          <h2 className="text-3xl font-bold tracking-tight">Olá, {user?.nome?.split(' ')[0]}</h2>
           <p className="text-muted-foreground">Visão geral do studio em tempo real.</p>
         </div>
         <Button onClick={refetch} variant="outline" size="sm" className="gap-2 shrink-0">

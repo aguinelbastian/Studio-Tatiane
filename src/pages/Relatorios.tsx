@@ -9,7 +9,7 @@ import { Printer } from 'lucide-react'
 import { useRelatoriosExportacao } from '@/hooks/useRelatoriosExportacao'
 
 export default function Relatorios() {
-  const { receitas, ocupacao, comportamento, loading } = useRelatoriosData()
+  const { receitas, ocupacao, comportamento, receitaEstudio, loading } = useRelatoriosData()
   const { exportarPDF } = useRelatoriosExportacao()
 
   if (loading) {
@@ -47,7 +47,7 @@ export default function Relatorios() {
         {/* On print, show active tab only, or we can use print styles to handle visibility if needed.
             TabsContent already manages visibility perfectly for screen and print */}
         <TabsContent value="receitas" className="print:block mt-0 border-none p-0">
-          <TabReceitas dados={receitas} />
+          <TabReceitas dados={receitas} receitaEstudio={receitaEstudio} />
         </TabsContent>
 
         <TabsContent value="ocupacao" className="print:block mt-0 border-none p-0">

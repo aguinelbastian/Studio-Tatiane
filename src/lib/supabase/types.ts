@@ -978,6 +978,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      marcar_parcela_paga: {
+        Args: {
+          p_parcela_id: string
+          p_metodo: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

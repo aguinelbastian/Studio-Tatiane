@@ -7,6 +7,9 @@ import uidPlugin from './vite-plugin-react-uid'
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  // Em produção o app é servido sob /Studio-Tatiane/ no GitHub Pages;
+  // em dev permanece em / para não atrapalhar o servidor local.
+  base: mode === 'development' ? '/' : '/Studio-Tatiane/',
   server: {
     host: '::',
     port: 8080,

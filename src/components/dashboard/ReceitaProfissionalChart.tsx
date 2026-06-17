@@ -10,24 +10,22 @@ export const ReceitaProfissionalChart = memo(function ReceitaProfissionalChart({
 }) {
   const chartData = useMemo(() => {
     return receitas.map((r) => ({
-      name: r.nome || 'Desconhecido',
-      Planos: Number(r.receita_planos || 0),
-      Pacotes: Number(r.receita_pacotes || 0),
-      Comissão: Number(r.comissao_profissional || 0),
+      name: (r.nome || 'Desconhecido').split(' ')[0],
+      Paga: Number(r.comissao_paga || 0),
+      Pendente: Number(r.comissao_pendente || 0),
     }))
   }, [receitas])
 
   return (
     <Card className="h-full shadow-subtle">
       <CardHeader>
-        <CardTitle>Receita por Profissional</CardTitle>
+        <CardTitle>Comissões por Profissional</CardTitle>
       </CardHeader>
       <CardContent className="pl-0">
         <ChartContainer
           config={{
-            Planos: { label: 'Planos', color: 'hsl(220, 70%, 50%)' },
-            Pacotes: { label: 'Pacotes', color: 'hsl(160, 60%, 45%)' },
-            Comissão: { label: 'Comissão', color: 'hsl(280, 65%, 60%)' },
+            Paga: { label: 'Paga', color: 'hsl(160, 60%, 45%)' },
+            Pendente: { label: 'Pendente', color: 'hsl(40, 90%, 55%)' },
           }}
           className="h-[300px] w-full"
         >
@@ -49,14 +47,13 @@ export const ReceitaProfissionalChart = memo(function ReceitaProfissionalChart({
               />
               <Tooltip content={<ChartTooltipContent />} />
               <Legend verticalAlign="top" height={36} />
-              <Bar dataKey="Planos" stackId="a" fill="var(--color-Planos)" radius={[0, 0, 4, 4]} />
+              <Bar dataKey="Paga" stackId="a" fill="var(--color-Paga)" radius={[0, 0, 4, 4]} />
               <Bar
-                dataKey="Pacotes"
+                dataKey="Pendente"
                 stackId="a"
-                fill="var(--color-Pacotes)"
+                fill="var(--color-Pendente)"
                 radius={[4, 4, 0, 0]}
               />
-              <Bar dataKey="Comissão" fill="var(--color-Comissão)" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartContainer>

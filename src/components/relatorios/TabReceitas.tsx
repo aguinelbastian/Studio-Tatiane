@@ -18,53 +18,32 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart'
 import { TableRow, TableCell } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export function TabReceitas({ dados }: { dados: any[] }) {
-  const [periodo, setPeriodo] = useState('mes')
+export function TabReceitas({ dados, receitaEstudio }: { dados: any[]; receitaEstudio: any }) {
   const [profissional, setProfissional] = useState('todos')
 
+  const opcoesProfissional = useMemo(
+    () => dados.map((d) => ({ id: String(d.id), nome: String(d.nome ?? 'N/A') })),
+    [dados],
+  )
+
   const filteredData = useMemo(() => {
-    let d = dados
-    if (profissional !== 'todos') {
-      d = d.filter((x) => x.nome?.toLowerCase().includes(profissional))
-    }
-    return d
+    if (profissional === 'todos') return dados
+    return dados.filter((d) => String(d.id) === profissional)
   }, [dados, profissional])
 
-  const totais = useMemo(() => {
-    let tatiane = 0,
-      renata = 0,
-      miriam = 0,
-      comissaoRenata = 0,
-      planos = 0,
-      pacotes = 0
+  const est = receitaEstudio ?? {}
+  const vendido = Number(est.vendido_total) || 0
+  const recebido = Number(est.recebido_total) || 0
+  const comissoes = Number(est.comissoes_total) || 0
+  const liquida = Number(est.liquida_recebida) || 0
 
-    filteredData.forEach((d) => {
-      const rec = (Number(d.receita_planos) || 0) + (Number(d.receita_pacotes) || 0)
-      const comissao = Number(d.comissao_profissional) || 0
-      planos += Number(d.receita_planos) || 0
-      pacotes += Number(d.receita_pacotes) || 0
-
-      if (d.nome?.includes('Tatiane')) tatiane += rec
-      else if (d.nome?.includes('Renata')) {
-        renata += rec
-        comissaoRenata += comissao
-      } else if (d.nome?.includes('Miriam')) miriam += rec
-    })
-
-    const total = tatiane + renata + miriam
-    const liquida = total - comissaoRenata
-    return { total, tatiane, renata, comissaoRenata, liquida, planos, pacotes, miriam }
-  }, [filteredData])
-
-  const chartData = [
-    { name: 'Tatiane', valor: totais.tatiane },
-    { name: 'Renata', valor: totais.renata },
-    { name: 'Miriam', valor: totais.miriam },
-  ].filter((x) => x.valor > 0)
+  const chartData = filteredData
+    .map((d) => ({ name: String(d.nome ?? 'N/A').split(' ')[0], valor: Number(d.comissao_total) || 0 }))
+    .filter((x) => x.valor > 0)
 
   const pieData = [
-    { name: 'Planos', value: totais.planos },
-    { name: 'Pacotes', value: totais.pacotes },
+    { name: 'Planos', value: Number(est.vendido_planos) || 0 },
+    { name: 'Pacotes', value: Number(est.vendido_pacotes) || 0 },
   ].filter((x) => x.value > 0)
 
   const formatCurrency = (val: number) => `R$ ${val.toFixed(2).replace('.', ',')}`
@@ -72,41 +51,45 @@ export function TabReceitas({ dados }: { dados: any[] }) {
   return (
     <div className="space-y-6">
       <FiltrosRelatorio
-        periodo={periodo}
-        setPeriodo={setPeriodo}
+        periodo="todos"
+        setPeriodo={() => {}}
         profissional={profissional}
         setProfissional={setProfissional}
+        opcoesProfissional={opcoesProfissional}
+        mostrarPeriodo={false}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <CardKPI
-          title="Receita Total"
-          value={formatCurrency(totais.total)}
+          title="Receita Vendida"
+          value={formatCurrency(vendido)}
           icon={<DollarSign className="h-4 w-4" />}
+          description="Contratos (exclui cancelados)"
           className="bg-primary/5"
         />
-        <CardKPI title="Receita Tatiane" value={formatCurrency(totais.tatiane)} />
-        <CardKPI title="Receita Renata (Bruta)" value={formatCurrency(totais.renata)} />
         <CardKPI
-          title="Comissão Renata"
-          value={formatCurrency(totais.comissaoRenata)}
-          trend="down"
-        />
-        <CardKPI
-          title="Receita Líquida"
-          value={formatCurrency(totais.liquida)}
+          title="Receita Recebida"
+          value={formatCurrency(recebido)}
           icon={<DollarSign className="h-4 w-4" />}
+          description="Pagamentos confirmados"
+        />
+        <CardKPI title="Comissões" value={formatCurrency(comissoes)} trend="down" />
+        <CardKPI
+          title="Líquida (Recebida)"
+          value={formatCurrency(liquida)}
+          icon={<DollarSign className="h-4 w-4" />}
+          description="Recebida − Comissões"
         />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <Card className="break-inside-avoid">
           <CardHeader>
-            <CardTitle>Receita por Profissional</CardTitle>
+            <CardTitle>Comissão por Profissional</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
-              config={{ valor: { label: 'Receita', color: 'hsl(var(--primary))' } }}
+              config={{ valor: { label: 'Comissão', color: 'hsl(var(--primary))' } }}
               className="h-[300px]"
             >
               <ResponsiveContainer width="100%" height="100%">
@@ -128,7 +111,7 @@ export function TabReceitas({ dados }: { dados: any[] }) {
 
         <Card className="break-inside-avoid">
           <CardHeader>
-            <CardTitle>Por Tipo de Contrato</CardTitle>
+            <CardTitle>Vendido por Tipo de Contrato</CardTitle>
           </CardHeader>
           <CardContent>
             <ChartContainer
@@ -173,10 +156,9 @@ export function TabReceitas({ dados }: { dados: any[] }) {
               'Total Aulas',
               'Realizadas',
               'Taxa Real.',
-              'Rec. Planos',
-              'Rec. Pacotes',
-              'Total Bruto',
-              'Comissão',
+              'Comissão Total',
+              'Paga',
+              'Pendente',
             ]}
             dados={filteredData}
             nomeExportacao="receitas"
@@ -185,20 +167,18 @@ export function TabReceitas({ dados }: { dados: any[] }) {
               const realizadas = Number(row.aulas_realizadas) || 0
               const taxa =
                 totalAulas > 0 ? ((realizadas / totalAulas) * 100).toFixed(1) + '%' : '0%'
-              const recPlanos = Number(row.receita_planos) || 0
-              const recPacotes = Number(row.receita_pacotes) || 0
-              const totalBruto = recPlanos + recPacotes
-              const comissao = Number(row.comissao_profissional) || 0
+              const comTotal = Number(row.comissao_total) || 0
+              const comPaga = Number(row.comissao_paga) || 0
+              const comPend = Number(row.comissao_pendente) || 0
               return (
                 <TableRow key={i}>
                   <TableCell className="font-medium">{row.nome || 'N/A'}</TableCell>
                   <TableCell>{totalAulas}</TableCell>
                   <TableCell>{realizadas}</TableCell>
                   <TableCell>{taxa}</TableCell>
-                  <TableCell>{formatCurrency(recPlanos)}</TableCell>
-                  <TableCell>{formatCurrency(recPacotes)}</TableCell>
-                  <TableCell className="font-bold">{formatCurrency(totalBruto)}</TableCell>
-                  <TableCell className="text-red-500">{formatCurrency(comissao)}</TableCell>
+                  <TableCell className="font-bold">{formatCurrency(comTotal)}</TableCell>
+                  <TableCell className="text-green-600">{formatCurrency(comPaga)}</TableCell>
+                  <TableCell className="text-amber-600">{formatCurrency(comPend)}</TableCell>
                 </TableRow>
               )
             }}

@@ -1,5 +1,12 @@
 -- P0 / Task 7 — Remove as contas de teste. Aplicar SOMENTE após a verificação da Task 6 passar.
 -- As linhas de public.profissionais (instrutoras reais) NÃO são apagadas; só as contas de login de teste.
+-- aguinel@gmail.com é admin permanente (migration 0009) e NÃO entra na remoção.
+
+-- Pré-requisito: profissionais.usuario_id era NOT NULL, o que impedia "soltar" instrutoras
+-- sem conta real antes de apagar os logins de teste (causava 23502). Torna a coluna anulável —
+-- um profissional pode existir como cadastro/agenda/repasse SEM login até ser provisionado.
+-- Idempotente: drop not null em coluna já anulável é no-op.
+alter table public.profissionais alter column usuario_id drop not null;
 
 -- Religa a profissional Tatiane à conta real (caso a de teste estivesse vinculada).
 update public.profissionais

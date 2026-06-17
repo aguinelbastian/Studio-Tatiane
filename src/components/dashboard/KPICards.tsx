@@ -26,14 +26,16 @@ export const KPICards = memo(function KPICards({ kpis }: { kpis: DashboardData['
 
       <Card className="shadow-subtle hover:shadow-md transition-shadow bg-emerald-50/30 dark:bg-emerald-950/10">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Receita do Mês</CardTitle>
+          <CardTitle className="text-sm font-medium">Vendido no Mês</CardTitle>
           <div className="p-2 bg-emerald-100 dark:bg-emerald-900/40 rounded-full">
             <DollarSign className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
           </div>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{formatCurrency(kpis.receitaMes)}</div>
-          <p className="text-xs text-muted-foreground">Em contratos iniciados este mês</p>
+          <p className="text-xs text-muted-foreground">
+            Recebido: {formatCurrency(kpis.recebidoMes)}
+          </p>
         </CardContent>
       </Card>
 

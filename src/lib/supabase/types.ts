@@ -935,16 +935,28 @@ export type Database = {
       }
       vw_receitas_profissional: {
         Row: {
-          aulas_canceladas: number | null
-          aulas_realizadas: number | null
-          comissao_percentual: number | null
-          comissao_profissional: number | null
           id: string | null
           nome: string | null
-          receita_pacotes: number | null
-          receita_planos: number | null
           tipo: string | null
+          comissao_percentual: number | null
           total_aulas: number | null
+          aulas_realizadas: number | null
+          aulas_canceladas: number | null
+          comissao_total: number | null
+          comissao_paga: number | null
+          comissao_pendente: number | null
+        }
+        Relationships: []
+      }
+      vw_receita_estudio: {
+        Row: {
+          vendido_total: number | null
+          vendido_planos: number | null
+          vendido_pacotes: number | null
+          recebido_total: number | null
+          comissoes_total: number | null
+          comissoes_pendente: number | null
+          liquida_recebida: number | null
         }
         Relationships: []
       }
@@ -963,6 +975,13 @@ export type Database = {
       delete_user: {
         Args: {
           p_user_id: string
+        }
+        Returns: undefined
+      }
+      marcar_parcela_paga: {
+        Args: {
+          p_parcela_id: string
+          p_metodo: string
         }
         Returns: undefined
       }

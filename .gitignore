@@ -34,3 +34,7 @@ screenshot.png
 
 # Environment variables
 .env*
+
+# Local tooling (Claude Code / Superpowers)
+.claude/
+.superpowers/

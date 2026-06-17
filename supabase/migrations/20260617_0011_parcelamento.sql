@@ -1,12 +1,20 @@
 -- Fase 2A: parcelamento — gera parcelas/pagamento na criacao do contrato + RPC de baixa.
 
-ALTER TABLE public.parcelas_planos
-  ADD CONSTRAINT parcelas_planos_contrato_numero_key UNIQUE (contrato_id, numero_parcela);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'parcelas_planos_contrato_numero_key'
+  ) THEN
+    ALTER TABLE public.parcelas_planos
+      ADD CONSTRAINT parcelas_planos_contrato_numero_key UNIQUE (contrato_id, numero_parcela);
+  END IF;
+END $$;
 
 CREATE OR REPLACE FUNCTION public.fn_gerar_cobranca_contrato()
 RETURNS trigger
 LANGUAGE plpgsql
-SECURITY INVOKER
+SECURITY DEFINER
+SET search_path = public
 AS $$
 DECLARE
   v_qtd integer;
